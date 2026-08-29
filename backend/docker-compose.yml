@@ -1,0 +1,31 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: mainplataform-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: mainplataform
+    volumes:
+      - mongo_data:/data/db
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mainplataform-api
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      MONGODB_URI: mongodb://mongo:27017/mainplataform
+      JWT_SECRET: dev-only-secret-cambiar-en-produccion
+      CORS_ORIGINS: http://localhost:5173
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:

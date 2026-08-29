@@ -1,0 +1,44 @@
+# Archivos de configuración de agentes
+agents.md
+CONTEXT.md
+requisitos.txt
+.agents/
+skills/
+skills-lock.json
+docs/adr/
+
+# Git hooks
+.husky/
+
+# Archivos temporales
+*.swp
+*.swo
+.requisitos.txt.swp
+
+# Dependencias
+node_modules/
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+
+# Variables de entorno (NUNCA subir secretos)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Cobertura y reportes
+coverage/
+
+# Logs
+*.log
+logs/
+
+# Sistema
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
