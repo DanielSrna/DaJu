@@ -7,9 +7,6 @@ skills/
 skills-lock.json
 docs/adr/
 
-# Git hooks
-.husky/
-
 # Archivos temporales
 *.swp
 *.swo
