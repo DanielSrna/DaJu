@@ -6,6 +6,7 @@ requisitos.txt
 skills/
 skills-lock.json
 docs/adr/
+documentacion-api.txt
 
 # Archivos temporales
 *.swp
@@ -25,6 +26,9 @@ build/
 .env.local
 .env.production
 .env.*.local
+
+# Scripts locales de prueba de rutas (solo para el dueño)
+backend/scripts/
 
 # Cobertura y reportes
 coverage/

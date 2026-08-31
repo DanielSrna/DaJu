@@ -11,14 +11,26 @@ const envSchema = z.object({
   JWT_SECRET: z
     .string()
     .min(16, "JWT_SECRET debe tener al menos 16 caracteres"),
-  JWT_EXPIRES_IN: z.string().default("7d"),
+  JWT_REFRESH_SECRET: z
+    .string()
+    .min(16, "JWT_REFRESH_SECRET debe tener al menos 16 caracteres"),
+  JWT_ACCESS_EXPIRATION: z.string().default("15m"),
+  JWT_REFRESH_EXPIRATION: z.string().default("7d"),
   COOKIE_SECURE: z
     .string()
     .default("false")
     .transform((v) => v === "true"),
   CORS_ORIGINS: z.string().default("http://localhost:5173"),
-  STRIPE_SECRET_KEY: z.string().default(""),
-  STRIPE_WEBHOOK_SECRET: z.string().default(""),
+  APP_URL: z.string().default(""),
+  EPAYCO_PUBLIC_KEY: z.string().default(""),
+  EPAYCO_PRIVATE_KEY: z.string().default(""),
+  EPAYCO_CUST_ID_CLIENTE: z.string().default(""),
+  EPAYCO_WEBHOOK_URL: z.string().default(""),
+  EMAIL_USER: z.string().default(""),
+  EMAIL_APP_PASSWORD: z.string().default(""),
+  CONTACT_EMAIL: z.string().default(""),
+  ADMIN_EMAIL: z.string().default(""),
+  ADMIN_PASSWORD: z.string().default(""),
   SMTP_HOST: z.string().default(""),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().default(""),

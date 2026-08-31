@@ -1,8 +1,8 @@
 /**
  * Contrato de pagos. Todo el flujo de checkout depende de esta interfaz,
- * NUNCA de Stripe directamente (ver ADR-001 / Principios de Arquitectura).
+ * NUNCA de la pasarela directamente (ver ADR-001 / Principios de Arquitectura).
  *
- * Implementaciones: StripePaymentProvider (adapter) — por implementar.
+ * Implementaciones: EpaycoPaymentProvider (ePayco, ver ADR-005).
  */
 export interface PaymentResult {
   paymentId: string;
@@ -18,10 +18,7 @@ export interface PaymentProvider {
     clientEmail: string;
     metadata: Record<string, string>;
   }): Promise<PaymentResult>;
-  handleWebhook(
-    rawBody: string,
-    signature: string,
-  ): Promise<{
+  handleWebhook(body: Record<string, unknown>): Promise<{
     eventType: string;
     paymentId: string;
     status: PaymentResult["status"];

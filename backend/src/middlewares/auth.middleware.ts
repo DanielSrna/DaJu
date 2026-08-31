@@ -1,14 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import { env } from "../config/env";
 import { ApiError } from "../utils/ApiError";
 import { logger } from "../config/logger";
 import { AuthUser } from "../types/express";
-
-export interface JwtPayload extends jwt.JwtPayload {
-  id: string;
-  rol: "admin" | "cliente";
-}
+import { COOKIE_NAMES, verifyAccessToken, JwtPayload } from "../utils/jwt";
 
 export function authMiddleware(
   req: Request,
@@ -17,7 +11,7 @@ export function authMiddleware(
 ): void {
   logger.proceso("Verificando autenticación JWT", { requestId: req.requestId });
 
-  const token = req.cookies?.accessToken ?? extractBearerToken(req);
+  const token = req.cookies?.[COOKIE_NAMES.access] ?? extractBearerToken(req);
 
   if (!token) {
     logger.fracaso("Autenticación rechazada: token ausente", {
@@ -28,7 +22,7 @@ export function authMiddleware(
   }
 
   try {
-    const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+    const payload = verifyAccessToken(token) as JwtPayload;
     const user: AuthUser = { id: payload.id, rol: payload.rol };
     req.user = user;
     logger.exito("Autenticación válida", {

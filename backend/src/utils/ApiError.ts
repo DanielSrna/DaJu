@@ -30,6 +30,10 @@ export class ApiError extends Error {
     return new ApiError(400, "VALIDATION_ERROR", message, details);
   }
 
+  static badRequest(message: string): ApiError {
+    return new ApiError(400, "VALIDATION_ERROR", message);
+  }
+
   static unauthorized(message = "No autenticado"): ApiError {
     return new ApiError(401, "UNAUTHORIZED", message);
   }

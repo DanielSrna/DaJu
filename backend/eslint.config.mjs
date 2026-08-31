@@ -3,7 +3,7 @@ import tseslint from 'typescript-eslint';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'tests/**', '**/*.config.js', 'migrations/**'] },
+  { ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'tests/**', '**/*.config.js', 'migrate-mongo-config.js', 'migrations/**'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {

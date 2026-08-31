@@ -1,11 +1,27 @@
+import { NextFunction, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { env } from "../config/env";
 
-export const generalRateLimiter = rateLimit({
+export function buildLimiter(opts: {
+  windowMs: number;
+  limit: number;
+  message: { error: { code: string; message: string } };
+}) {
+  if (process.env.NODE_ENV === "test") {
+    return (_req: Request, _res: Response, next: NextFunction): void => next();
+  }
+  return rateLimit({
+    windowMs: opts.windowMs,
+    limit: opts.limit,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: opts.message,
+  });
+}
+
+export const generalRateLimiter = buildLimiter({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   limit: env.RATE_LIMIT_MAX,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
   message: {
     error: {
       code: "RATE_LIMITED",
@@ -14,11 +30,9 @@ export const generalRateLimiter = rateLimit({
   },
 });
 
-export const authRateLimiter = rateLimit({
+export const authRateLimiter = buildLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 20,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
   message: {
     error: {
       code: "RATE_LIMITED",

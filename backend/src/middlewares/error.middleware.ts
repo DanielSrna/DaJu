@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import multer from "multer";
 import { ApiError } from "../utils/ApiError";
 import { logger } from "../config/logger";
 
@@ -9,6 +10,21 @@ export function errorMiddleware(
   _next: NextFunction,
 ): void {
   const requestId = req.requestId ?? "sin-request-id";
+
+  if (error instanceof multer.MulterError) {
+    const mensaje =
+      error.code === "LIMIT_FILE_SIZE"
+        ? "El archivo supera el tamaño máximo permitido (5 MB)"
+        : `Error al subir el archivo: ${error.message}`;
+    logger.fracaso(`Error de upload en ${req.method} ${req.originalUrl}`, {
+      requestId,
+      code: error.code,
+    });
+    res.status(400).json({
+      error: { code: "VALIDATION_ERROR", message: mensaje },
+    });
+    return;
+  }
 
   if (error instanceof ApiError) {
     logger.fracaso(
