@@ -6,6 +6,7 @@ import {
   Check,
   Clock,
   Code2,
+  HelpCircle,
   ImageIcon,
   Layers,
   Lightbulb,
@@ -267,7 +268,7 @@ export function Productos() {
                   )}
 
                   <div className="flex flex-1 flex-col p-6">
-                    <p className="inline-flex w-fit items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                    <p className="inline-flex w-fit items-center gap-1 rounded-full bg-[var(--brand-acento)]/15 px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-primario)]">
                       <Layers className="size-3" />
                       {DESCRIPCION_TIPO[paquete.tipo]}
                     </p>
@@ -340,12 +341,14 @@ export function Productos() {
                 ))}
               </ul>
               <div className="mt-auto pt-5">
-                <p className="text-sm text-muted-foreground">
+                <p className="inline-flex items-baseline gap-1.5 rounded-full border border-[var(--brand-acento)]/40 bg-[var(--brand-acento)]/10 px-3 py-1">
                   Desde{" "}
                   <span className="text-lg font-bold text-[var(--brand-primario)]">
                     ${desde.toLocaleString("es-CO")}
-                  </span>{" "}
-                  + nube
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    + nube
+                  </span>
                 </p>
                 <Button asChild variant="outline" className="mt-3 w-full">
                   <Link to="/contacto">
@@ -375,11 +378,13 @@ export function Productos() {
               key={titulo}
               className="flex flex-col rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
             >
-              <Icono className="size-8 text-[var(--brand-acento)]" />
+              <div className="flex size-11 items-center justify-center rounded-lg bg-[var(--brand-primario)] text-[var(--brand-acento)]">
+                <Icono className="size-5" />
+              </div>
               <h3 className="mt-4 text-lg font-bold">{titulo}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{descripcion}</p>
-              <p className="mt-4 inline-flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-                <Code2 className="size-3.5 shrink-0" />
+              <p className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[var(--brand-primario)]/10 bg-[var(--brand-primario)]/[0.04] px-3 py-2 text-xs text-muted-foreground">
+                <Code2 className="size-3.5 shrink-0 text-[var(--brand-acento)]" />
                 {para}
               </p>
               <div className="mt-auto pt-5">
@@ -400,111 +405,153 @@ export function Productos() {
         desplegable, para quien aún duda entre paquetes.
       */}
       <section id="no-sabes-que-elegir" className="mt-16 scroll-mt-24">
-        <h2 className="text-2xl font-bold">¿No sabes qué elegir?</h2>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Sin presión: abre la comparativa, lee las recomendaciones según tu
-          momento y, si nada te encaja, escríbenos y lo negociamos.
-        </p>
+        <div className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-[var(--brand-primario)]/[0.06] via-transparent to-[var(--brand-acento)]/[0.08]">
+          {/* Barra de acento superior */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-[var(--brand-primario)] via-[var(--brand-acento)] to-[var(--brand-primario)]" />
 
-        <div className="mt-6 rounded-xl border">
-          <Accordion type="single" collapsible>
-            <AccordionItem value="comparativa">
-              <AccordionTrigger>
-                Comparativa: los tres paquetes lado a lado
-              </AccordionTrigger>
-              <AccordionContent>
-                {paquetes ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                      <thead>
-                        <tr className="border-b bg-muted/60">
-                          <th className="p-4 font-semibold">Característica</th>
-                          {paquetes.map((p) => (
-                            <th key={p.id} className="p-4 font-semibold">
-                              {p.nombre}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {FILAS_COMPARATIVA.map((fila) => (
-                          <tr key={fila.etiqueta} className="border-b last:border-0">
-                            <th
-                              scope="row"
-                              className="p-4 align-middle font-medium text-muted-foreground"
-                            >
-                              {fila.etiqueta}
-                            </th>
-                            {paquetes.map((p) => (
-                              <td
-                                key={p.id}
-                                className={`p-4 align-middle ${fila.destacado ? "font-bold text-[var(--brand-primario)]" : ""}`}
+          <div className="p-6 sm:p-10">
+            <div className="flex items-start gap-4">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-primario)] text-[var(--brand-acento)] shadow-sm">
+                <HelpCircle className="size-6" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-acento)]">
+                  ¿Dudas entre paquetes?
+                </p>
+                <h2 className="mt-1 text-2xl font-bold sm:text-3xl">
+                  ¿No sabes qué elegir?
+                </h2>
+                <p className="mt-2 max-w-2xl leading-relaxed text-muted-foreground">
+                  Sin presión: abre la comparativa, lee la recomendación según tu
+                  momento y, si nada te encaja, escríbenos y lo negociamos.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 overflow-hidden rounded-2xl border bg-background shadow-sm">
+              <Accordion type="single" collapsible>
+                <AccordionItem
+                  value="comparativa"
+                  className="border-b last:border-0"
+                >
+                  <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
+                    Comparativa: los tres paquetes lado a lado
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-5 sm:px-6">
+                    {paquetes ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+                          <thead>
+                            <tr className="bg-[var(--brand-primario)] text-white">
+                              <th className="p-4 font-semibold">Característica</th>
+                              {paquetes.map((p) => (
+                                <th key={p.id} className="p-4 font-semibold">
+                                  {p.nombre}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {FILAS_COMPARATIVA.map((fila) => (
+                              <tr
+                                key={fila.etiqueta}
+                                className="border-b last:border-0 odd:bg-muted/40"
                               >
-                                {fila.valor(p)}
-                              </td>
+                                <th
+                                  scope="row"
+                                  className="p-4 align-middle font-medium text-muted-foreground"
+                                >
+                                  {fila.etiqueta}
+                                </th>
+                                {paquetes.map((p) => (
+                                  <td
+                                    key={p.id}
+                                    className={`p-4 align-middle ${fila.destacado ? "font-bold text-[var(--brand-primario)]" : ""}`}
+                                  >
+                                    {fila.valor(p)}
+                                  </td>
+                                ))}
+                              </tr>
                             ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="py-4 text-sm text-muted-foreground">
-                    {error
-                      ? "La comparativa estará disponible cuando los paquetes se carguen. Intenta recargar la página."
-                      : "Cargando los paquetes…"}
-                  </p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            {RECOMENDACIONES.map((rec) => {
-              const paquete = paquetes?.find((p) => p.tipo === rec.tipo) ?? null;
-              return (
-                <AccordionItem key={rec.tipo} value={`recomendacion-${rec.tipo}`}>
-                  <AccordionTrigger>{rec.pregunta}</AccordionTrigger>
-                  <AccordionContent>
-                    <p>{rec.texto}</p>
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      {paquete
-                        ? `Nuestra recomendación: el paquete ${paquete.nombre} (${DESCRIPCION_TIPO[paquete.tipo].toLowerCase()}).`
-                        : "Nuestra recomendación depende del momento de tu negocio: lo conversamos sin compromiso."}
-                    </p>
-                    {paquete && (
-                      <div className="mt-4">
-                        <Button asChild variant="outline">
-                          <Link to={`/productos/${paquete.slug}`}>
-                            Ver el paquete {paquete.nombre} en detalle
-                            <ArrowRight />
-                          </Link>
-                        </Button>
+                          </tbody>
+                        </table>
                       </div>
+                    ) : (
+                      <p className="py-2 text-sm text-muted-foreground">
+                        {error
+                          ? "La comparativa estará disponible cuando los paquetes se carguen. Intenta recargar la página."
+                          : "Cargando los paquetes…"}
+                      </p>
                     )}
                   </AccordionContent>
                 </AccordionItem>
-              );
-            })}
 
-            <AccordionItem value="negociar">
-              <AccordionTrigger>¿Ninguno te encaja del todo?</AccordionTrigger>
-              <AccordionContent>
-                <p>
-                  Es normal: tu caso puede combinar necesidades de varios
-                  paquetes o ir por otro camino. Cuéntanos qué necesitas y te
-                  proponemos un alcance y precio negociados, o compra el paquete
-                  base y suma funcionalidades con costo según su complejidad.
-                </p>
-                <div className="mt-4">
-                  <Button asChild variant="accent">
-                    <Link to="/contacto">
-                      Contar mi caso para negociar
-                      <ArrowRight />
-                    </Link>
-                  </Button>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                {RECOMENDACIONES.map((rec) => {
+                  const paquete = paquetes?.find((p) => p.tipo === rec.tipo) ?? null;
+                  return (
+                    <AccordionItem
+                      key={rec.tipo}
+                      value={`recomendacion-${rec.tipo}`}
+                      className="border-b last:border-0"
+                    >
+                      <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
+                        {rec.pregunta}
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-5 sm:px-6">
+                        <p className="leading-relaxed">{rec.texto}</p>
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                          {paquete && (
+                            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--brand-acento)]/15 px-3 py-1 text-sm font-semibold text-[var(--brand-primario)]">
+                              <Check className="size-4" />
+                              Recomendado: {paquete.nombre}
+                            </span>
+                          )}
+                          <p className="text-sm text-muted-foreground">
+                            {paquete
+                              ? DESCRIPCION_TIPO[paquete.tipo].toLowerCase() + "."
+                              : "La recomendación depende del momento de tu negocio: lo conversamos sin compromiso."}
+                          </p>
+                        </div>
+                        {paquete && (
+                          <div className="mt-4">
+                            <Button asChild variant="outline">
+                              <Link to={`/productos/${paquete.slug}`}>
+                                Ver el paquete {paquete.nombre} en detalle
+                                <ArrowRight />
+                              </Link>
+                            </Button>
+                          </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+
+                <AccordionItem value="negociar" className="border-b last:border-0">
+                  <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
+                    ¿Ninguno te encaja del todo?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-5 sm:px-6">
+                    <p className="leading-relaxed">
+                      Es normal: tu caso puede combinar necesidades de varios
+                      paquetes o ir por otro camino. Cuéntanos qué necesitas y te
+                      proponemos un alcance y precio negociados, o compra el
+                      paquete base y suma funcionalidades con costo según su
+                      complejidad.
+                    </p>
+                    <div className="mt-5">
+                      <Button asChild variant="accent">
+                        <Link to="/contacto">
+                          Contar mi caso para negociar
+                          <ArrowRight />
+                        </Link>
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          </div>
         </div>
       </section>
     </div>
