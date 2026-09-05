@@ -78,5 +78,43 @@ describe("Vitrina DaJu", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("¿Quiénes somos?")).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("heading", { name: "¿Cómo funciona?" }),
+    ).toBeInTheDocument();
+    for (const nombre of [
+      "Elige tu paquete",
+      "Completa el briefing",
+      "Construimos con seguimiento",
+      "Recibes soporte con garantía",
+    ]) {
+      expect(screen.getByRole("heading", { name: nombre })).toBeInTheDocument();
+    }
+    expect(
+      screen.getByRole("link", { name: /Empezar mi proyecto/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("productos muestra las familias (paquetes, plantillas y consultoría) incluso si la API falla", async () => {
+    renderApp("/productos");
+
+    expect(
+      screen.getByRole("heading", { name: "Plantillas listas para desplegar" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Plantilla Reservas/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Consultoría por sesiones" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Auditoría de código/ })).toBeInTheDocument();
+    expect(
+      await screen.findByText(/no pudimos cargar los productos/i),
+    ).toBeInTheDocument();
+  });
+
+  it("aplica meta tags (title y description) por ruta", () => {
+    renderApp("/faq");
+    expect(document.title).toContain("Preguntas frecuentes");
+    const desc = document.querySelector('meta[name="description"]');
+    expect(desc?.getAttribute("content")).toBeTruthy();
   });
 });

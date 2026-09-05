@@ -4,13 +4,17 @@ import {
   ArrowRight,
   BadgeCheck,
   Blocks,
+  ClipboardList,
   Code2,
   GraduationCap,
   HeartHandshake,
+  LifeBuoy,
   ListChecks,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   Target,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CarruselVertical } from "@/components/vitrina/carrusel-vertical";
@@ -87,6 +91,33 @@ const VALORES = [
     titulo: "Trato directo",
     texto:
       "Hablas con quien construye tu proyecto, sin intermediarios ni mensajes automáticos.",
+  },
+];
+
+const PASOS = [
+  {
+    icono: ShoppingBag,
+    titulo: "Elige tu paquete",
+    texto:
+      "Escoge el alcance que necesitas y suma funcionalidades con precio claro.",
+  },
+  {
+    icono: ClipboardList,
+    titulo: "Completa el briefing",
+    texto:
+      "Te guiamos para entregar textos, logos y requerimientos en un solo lugar.",
+  },
+  {
+    icono: Wrench,
+    titulo: "Construimos con seguimiento",
+    texto:
+      "Diseño, desarrollo y pruebas por etapas, con fecha de entrega fija.",
+  },
+  {
+    icono: LifeBuoy,
+    titulo: "Recibes soporte con garantía",
+    texto:
+      "Al entregar tu proyecto inicia la garantía: 2, 6 o 12 meses según el paquete.",
   },
 ];
 
@@ -244,6 +275,40 @@ export function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/*
+        ¿Cómo funciona?: el camino del cliente en 4 pasos.
+      */}
+      <section className="mx-auto max-w-6xl px-4 pb-16">
+        <h2 className="text-center text-3xl font-bold">¿Cómo funciona?</h2>
+        <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
+          Cuatro pasos, sin sorpresas ni letra pequeña: así se ve trabajar
+          con nosotros de principio a fin.
+        </p>
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {PASOS.map(({ icono: Icono, titulo, texto }, i) => (
+            <article
+              key={titulo}
+              className="relative rounded-xl border bg-card p-6 shadow-sm"
+            >
+              <span className="absolute right-5 top-5 text-4xl font-bold text-[var(--brand-primario)]/10">
+                {i + 1}
+              </span>
+              <Icono className="size-8 text-[var(--brand-acento)]" />
+              <h3 className="mt-4 text-lg font-semibold">{titulo}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{texto}</p>
+            </article>
+          ))}
+        </div>
+        <div className="mt-10 text-center">
+          <Button asChild variant="accent" size="lg">
+            <Link to="/productos">
+              Empezar mi proyecto
+              <ArrowRight />
+            </Link>
+          </Button>
         </div>
       </section>
     </>
