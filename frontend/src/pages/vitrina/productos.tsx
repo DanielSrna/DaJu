@@ -268,37 +268,40 @@ export function Productos() {
                   )}
 
                   <div className="flex flex-1 flex-col p-6">
-                    <p className="inline-flex w-fit items-center gap-1 rounded-full bg-[var(--brand-acento)]/15 px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-primario)]">
-                      <Layers className="size-3" />
+                    <p className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--brand-primario)]/[0.08] px-2.5 py-1 text-xs font-semibold text-[var(--brand-primario)]">
+                      <Layers className="size-3.5 text-[var(--brand-acento)]" />
                       {DESCRIPCION_TIPO[paquete.tipo]}
                     </p>
-                    <h3 className="mt-3 text-xl font-bold">{paquete.nombre}</h3>
-                    <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
+                    <h3 className="mt-4 text-xl font-bold">{paquete.nombre}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                       {paquete.descripcion}
                     </p>
 
-                    <ul className="mt-4 space-y-2">
+                    <ul className="mt-5 space-y-2.5">
                       {paquete.features.slice(0, 3).map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-sm">
-                          <Check className="mt-0.5 size-4 shrink-0 text-[var(--brand-acento)]" />
+                        <li key={f} className="flex items-start gap-2.5 text-sm leading-relaxed">
+                          <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-[var(--brand-acento)]/20">
+                            <Check className="size-2.5 text-[var(--brand-primario)]" />
+                          </span>
                           {f}
                         </li>
                       ))}
                     </ul>
 
                     <div className="mt-auto pt-6">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-2xl font-bold">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-2xl font-bold text-[var(--brand-primario)]">
                           ${paquete.precio.toLocaleString("es-CO")}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
                           <Clock className="size-3" />
                           {paquete.diasEntrega} días hábiles
                         </span>
                       </div>
-                      <Button asChild className="mt-3 w-full" variant="accent">
+                      <Button asChild className="mt-4 w-full" variant="accent">
                         <Link to={`/productos/${paquete.slug}`}>
                           Ver detalle
+                          <ArrowRight />
                         </Link>
                       </Button>
                     </div>
@@ -407,15 +410,16 @@ export function Productos() {
       <section id="no-sabes-que-elegir" className="mt-16 scroll-mt-24">
         <div className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-[var(--brand-primario)]/[0.06] via-transparent to-[var(--brand-acento)]/[0.08]">
           {/* Barra de acento superior */}
-          <div className="h-1.5 w-full bg-gradient-to-r from-[var(--brand-primario)] via-[var(--brand-acento)] to-[var(--brand-primario)]" />
+          <div className="h-2 w-full bg-gradient-to-r from-[var(--brand-primario)] via-[var(--brand-acento)] to-[var(--brand-primario)]" />
 
-          <div className="p-6 sm:p-10">
+          <div className="p-6 sm:p-8">
             <div className="flex items-start gap-4">
               <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-primario)] text-[var(--brand-acento)] shadow-sm">
                 <HelpCircle className="size-6" />
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-acento)]">
+                <p className="inline-flex items-center gap-2 rounded-full bg-[var(--brand-acento)]/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[var(--brand-primario)]">
+                  <span className="size-1.5 rounded-full bg-[var(--brand-acento)]" />
                   ¿Dudas entre paquetes?
                 </p>
                 <h2 className="mt-1 text-2xl font-bold sm:text-3xl">
