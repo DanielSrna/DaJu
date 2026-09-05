@@ -14,6 +14,12 @@ import {
   SearchCheck,
   Table2,
 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/cliente";
@@ -117,6 +123,58 @@ const CONSULTORIAS: Consultoria[] = [
   },
 ];
 
+/** Filas de la comparativa (se renderizan con los datos reales del paquete). */
+const FILAS_COMPARATIVA = [
+  {
+    etiqueta: "Ideal para",
+    valor: (p: Paquete) => DESCRIPCION_TIPO[p.tipo],
+  },
+  {
+    etiqueta: "Vistas incluidas",
+    valor: (p: Paquete) => `${p.vistasIncluidas}`,
+  },
+  {
+    etiqueta: "Soporte con garantía",
+    valor: (p: Paquete) => `${p.soporteMeses} meses`,
+  },
+  {
+    etiqueta: "Tiempo de entrega",
+    valor: (p: Paquete) => `${p.diasEntrega} días hábiles`,
+  },
+  {
+    etiqueta: "Precio",
+    valor: (p: Paquete) => `$${p.precio.toLocaleString("es-CO")}`,
+    destacado: true,
+  },
+];
+
+interface Recomendacion {
+  tipo: Paquete["tipo"];
+  pregunta: string;
+  texto: string;
+}
+
+const RECOMENDACIONES: Recomendacion[] = [
+  {
+    tipo: "validor",
+    pregunta: "¿Estás arrancando y quieres validar tu idea en internet?",
+    texto:
+      "Empezar no requiere una web gigante: una sola vista enfocada en convertir, con entrega rápida y 2 meses de soporte, es suficiente para probar tu idea sin sobre-invertir.",
+  },
+  {
+    tipo: "corporativo",
+    pregunta: "¿Ya tienes negocio y necesitas presencia seria?",
+    texto:
+      "Si necesitas que te encuentren, te entiendan y te contacten, una web de hasta 4 vistas con 6 meses de soporte te da la credibilidad que tu negocio en marcha merece.",
+  },
+  {
+    tipo: "operativo",
+    pregunta: "¿Quieres dejar las planillas y ver tus datos en un panel?",
+    texto:
+      "Si tu operación ya no cabe en la memoria ni en el cuaderno, un mini-dashboard con CRUD y métricas a tu medida —con 1 año de soporte— es el siguiente paso natural.",
+  },
+];
+
 export function Productos() {
   const [paquetes, setPaquetes] = useState<Paquete[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -187,65 +245,6 @@ export function Productos() {
           </div>
         ) : (
           <>
-            {/* Comparativa rápida entre paquetes */}
-            <div className="mt-8 overflow-x-auto rounded-xl border">
-              <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/60">
-                    <th className="p-4 font-semibold">Característica</th>
-                    {paquetes.map((p) => (
-                      <th key={p.id} className="p-4 font-semibold">
-                        {p.nombre}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    {
-                      etiqueta: "Ideal para",
-                      valor: (p: Paquete) => DESCRIPCION_TIPO[p.tipo],
-                    },
-                    {
-                      etiqueta: "Vistas incluidas",
-                      valor: (p: Paquete) => `${p.vistasIncluidas}`,
-                    },
-                    {
-                      etiqueta: "Soporte con garantía",
-                      valor: (p: Paquete) => `${p.soporteMeses} meses`,
-                    },
-                    {
-                      etiqueta: "Tiempo de entrega",
-                      valor: (p: Paquete) => `${p.diasEntrega} días hábiles`,
-                    },
-                    {
-                      etiqueta: "Precio",
-                      valor: (p: Paquete) =>
-                        `$${p.precio.toLocaleString("es-CO")}`,
-                      destacado: true,
-                    },
-                  ].map((fila) => (
-                    <tr key={fila.etiqueta} className="border-b last:border-0">
-                      <th
-                        scope="row"
-                        className="p-4 align-middle font-medium text-muted-foreground"
-                      >
-                        {fila.etiqueta}
-                      </th>
-                      {paquetes.map((p) => (
-                        <td
-                          key={p.id}
-                          className={`p-4 align-middle ${fila.destacado ? "font-bold text-[var(--brand-primario)]" : ""}`}
-                        >
-                          {fila.valor(p)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               {paquetes.map((paquete) => (
                 <article
@@ -393,6 +392,119 @@ export function Productos() {
               </div>
             </article>
           ))}
+        </div>
+      </section>
+
+      {/*
+        ¿No sabes qué elegir?: comparativa y recomendaciones en un
+        desplegable, para quien aún duda entre paquetes.
+      */}
+      <section id="no-sabes-que-elegir" className="mt-16 scroll-mt-24">
+        <h2 className="text-2xl font-bold">¿No sabes qué elegir?</h2>
+        <p className="mt-2 max-w-2xl text-muted-foreground">
+          Sin presión: abre la comparativa, lee las recomendaciones según tu
+          momento y, si nada te encaja, escríbenos y lo negociamos.
+        </p>
+
+        <div className="mt-6 rounded-xl border">
+          <Accordion type="single" collapsible>
+            <AccordionItem value="comparativa">
+              <AccordionTrigger>
+                Comparativa: los tres paquetes lado a lado
+              </AccordionTrigger>
+              <AccordionContent>
+                {paquetes ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/60">
+                          <th className="p-4 font-semibold">Característica</th>
+                          {paquetes.map((p) => (
+                            <th key={p.id} className="p-4 font-semibold">
+                              {p.nombre}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {FILAS_COMPARATIVA.map((fila) => (
+                          <tr key={fila.etiqueta} className="border-b last:border-0">
+                            <th
+                              scope="row"
+                              className="p-4 align-middle font-medium text-muted-foreground"
+                            >
+                              {fila.etiqueta}
+                            </th>
+                            {paquetes.map((p) => (
+                              <td
+                                key={p.id}
+                                className={`p-4 align-middle ${fila.destacado ? "font-bold text-[var(--brand-primario)]" : ""}`}
+                              >
+                                {fila.valor(p)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="py-4 text-sm text-muted-foreground">
+                    {error
+                      ? "La comparativa estará disponible cuando los paquetes se carguen. Intenta recargar la página."
+                      : "Cargando los paquetes…"}
+                  </p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            {RECOMENDACIONES.map((rec) => {
+              const paquete = paquetes?.find((p) => p.tipo === rec.tipo) ?? null;
+              return (
+                <AccordionItem key={rec.tipo} value={`recomendacion-${rec.tipo}`}>
+                  <AccordionTrigger>{rec.pregunta}</AccordionTrigger>
+                  <AccordionContent>
+                    <p>{rec.texto}</p>
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      {paquete
+                        ? `Nuestra recomendación: el paquete ${paquete.nombre} (${DESCRIPCION_TIPO[paquete.tipo].toLowerCase()}).`
+                        : "Nuestra recomendación depende del momento de tu negocio: lo conversamos sin compromiso."}
+                    </p>
+                    {paquete && (
+                      <div className="mt-4">
+                        <Button asChild variant="outline">
+                          <Link to={`/productos/${paquete.slug}`}>
+                            Ver el paquete {paquete.nombre} en detalle
+                            <ArrowRight />
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+
+            <AccordionItem value="negociar">
+              <AccordionTrigger>¿Ninguno te encaja del todo?</AccordionTrigger>
+              <AccordionContent>
+                <p>
+                  Es normal: tu caso puede combinar necesidades de varios
+                  paquetes o ir por otro camino. Cuéntanos qué necesitas y te
+                  proponemos un alcance y precio negociados, o compra el paquete
+                  base y suma funcionalidades con costo según su complejidad.
+                </p>
+                <div className="mt-4">
+                  <Button asChild variant="accent">
+                    <Link to="/contacto">
+                      Contar mi caso para negociar
+                      <ArrowRight />
+                    </Link>
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </section>
     </div>

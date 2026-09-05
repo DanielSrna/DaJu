@@ -48,10 +48,16 @@ describe("Vitrina DaJu", () => {
   it("los errores de API muestran estado con reintento (sin pantalla blanca)", async () => {
     renderApp("/productos");
     expect(
-      await screen.findByText(/no pudimos cargar los productos/i),
+      screen.getByRole("heading", { name: /Auditoría de código/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Reintentar" }),
+      screen.getByRole("heading", { name: "¿No sabes qué elegir?" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Comparativa: los tres paquetes lado a lado/i),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/no pudimos cargar los productos/i),
     ).toBeInTheDocument();
   });
 
