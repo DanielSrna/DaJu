@@ -164,3 +164,12 @@ body {
     transform 0.6s var(--ease-carrusel),
     opacity 0.6s ease;
 }
+
+/* Oculta la barra de scroll de contenedores deslizables (ej. nav móvil). */
+.sin-barra-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sin-barra-scroll::-webkit-scrollbar {
+  display: none;
+}

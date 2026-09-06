@@ -153,6 +153,17 @@ export interface Publicacion {
   secciones: Array<"inicio" | "productos" | "faq" | "postventa">;
 }
 
+/** Cuerpo para crear/actualizar una publicación (contrato API). */
+export interface PublicacionInput {
+  titulo: string;
+  slug?: string;
+  tipo: "concepto" | "noticia";
+  resumen: string;
+  contenido: string;
+  secciones?: Array<"inicio" | "productos" | "faq" | "postventa">;
+  publicado?: boolean;
+}
+
 /** Errores de la API (formato uniforme). */
 export interface ApiError {
   error: { code: string; message: string; details?: unknown };

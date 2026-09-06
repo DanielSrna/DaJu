@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { Footer } from "@/components/layout/footer";
 import { Marquesina, Navbar, TopBar } from "@/components/layout/navegacion";
-import { TemaProvider } from "@/lib/tema";
+import { TemaProvider, useTema } from "@/lib/tema";
 import { ModoEdicionProvider, useModoEdicion } from "@/lib/modo-edicion";
 import { aplicarMeta, metaDeRuta } from "@/lib/meta";
 import { DockEditor } from "@/components/editor/dock-editor";
@@ -28,6 +28,7 @@ import { ListaProductos } from "@/pages/admin/lista-productos";
 import { FormularioProducto } from "@/pages/admin/formulario-producto";
 import { PaginaAdmin } from "@/pages/admin/pagina-admin";
 import { OfertasAdmin } from "@/pages/admin/ofertas";
+import { BlogAdmin } from "@/pages/admin/blog-admin";
 
 /** Restringe una sección a usuarios admin (redirección in silencio si no). */
 function RequerirAdmin({ children }: { children: ReactNode }) {
@@ -49,11 +50,13 @@ function RequerirAdmin({ children }: { children: ReactNode }) {
  */
 export function AppRoutes() {
   const { pathname } = useLocation();
+  const { cms } = useTema();
 
-  // SEO por ruta: <title>, description, og:* y canonical.
+  // SEO por ruta: <title>, description, og:* y canonical
+  // (con textos del CMS si el admin los personalizó).
   useEffect(() => {
-    aplicarMeta(window.location.href, metaDeRuta(pathname));
-  }, [pathname]);
+    aplicarMeta(window.location.href, metaDeRuta(pathname, cms.textos));
+  }, [pathname, cms.textos]);
 
   return (
     <TemaProvider>
@@ -128,6 +131,22 @@ export function AppRoutes() {
                 element={
                   <RequerirAdmin>
                     <OfertasAdmin />
+                  </RequerirAdmin>
+                }
+              />
+              <Route
+                path="/admin/blog/:id"
+                element={
+                  <RequerirAdmin>
+                    <BlogAdmin />
+                  </RequerirAdmin>
+                }
+              />
+              <Route
+                path="/admin/blog"
+                element={
+                  <RequerirAdmin>
+                    <BlogAdmin />
                   </RequerirAdmin>
                 }
               />

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Package, Blocks, MessagesSquare, ArrowRight } from "lucide-react";
+import { Package, Blocks, MessagesSquare, BookOpen, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SECCIONES = [
@@ -20,6 +20,12 @@ const SECCIONES = [
     titulo: "Servicios",
     descripcion: "Consultoría por sesiones (auditorías, asesorías).",
     ruta: "/admin/servicios",
+  },
+  {
+    icono: BookOpen,
+    titulo: "Blog",
+    descripcion: "Noticias y conceptos publicados en la vitrina.",
+    ruta: "/admin/blog",
   },
 ];
 

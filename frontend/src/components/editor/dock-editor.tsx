@@ -10,12 +10,22 @@ import {
   BadgePercent,
   Sparkles,
   FolderKanban,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTema } from "@/lib/tema";
 import { api } from "@/lib/api/cliente";
 
 const PORCENTAJES = [20, 40, 70] as const;
+
+const PAGINAS_SEO = [
+  { ruta: "Inicio", prefijo: "meta.inicio" },
+  { ruta: "Productos", prefijo: "meta.productos" },
+  { ruta: "Blog", prefijo: "meta.blog" },
+  { ruta: "FAQ", prefijo: "meta.faq" },
+  { ruta: "Contacto", prefijo: "meta.contacto" },
+  { ruta: "Post-venta", prefijo: "meta.postventa" },
+] as const;
 
 interface DockEditorProps {
   /** Inyecta las funciones de persistencia (tests). Por defecto usan api. */
@@ -45,6 +55,14 @@ export function DockEditor({ persistir }: DockEditorProps) {
   const [hasta, setHasta] = useState(cms.descuento.hasta ?? "");
   const [diasExtra, setDiasExtra] = useState(cms.diasExtra);
   const [colorPrimario, setColorPrimario] = useState(cms.colores.primario);
+  const [seoTexto, setSeoTexto] = useState<Record<string, string>>(() => {
+    const inicial: Record<string, string> = {};
+    for (const pagina of PAGINAS_SEO) {
+      inicial[`${pagina.prefijo}.titulo`] = cms.textos[`${pagina.prefijo}.titulo`] ?? "";
+      inicial[`${pagina.prefijo}.descripcion`] = cms.textos[`${pagina.prefijo}.descripcion`] ?? "";
+    }
+    return inicial;
+  });
   const [colorAcento, setColorAcento] = useState(cms.colores.acento);
 
   const persistor = persistir ?? { patchEditor: api.patchEditor, publicar: api.publicarCms };
@@ -323,13 +341,58 @@ export function DockEditor({ persistir }: DockEditorProps) {
             </Button>
           </div>
 
+          {/* SEO por página */}
+          <section className="mt-2 rounded-lg border p-2.5">
+            <h3 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+              <Search className="size-3 text-[var(--brand-acento)]" />
+              SEO por página
+            </h3>
+            <div className="mt-2 space-y-3">
+              {PAGINAS_SEO.map((pagina) => (
+                <div key={pagina.prefijo} className="rounded-lg border border-dashed p-2">
+                  <p className="text-xs font-semibold">{pagina.ruta}</p>
+                  <input
+                    type="text"
+                    aria-label={`Título SEO ${pagina.ruta}`}
+                    placeholder="Título (title)"
+                    className="mt-1.5 w-full rounded border px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
+                    value={seoTexto[`${pagina.prefijo}.titulo`] ?? ""}
+                    onChange={(e) =>
+                      setSeoTexto((prev) => ({ ...prev, [`${pagina.prefijo}.titulo`]: e.target.value }))
+                    }
+                    onBlur={() =>
+                      void sincronizar({
+                        textos: { [`${pagina.prefijo}.titulo`]: seoTexto[`${pagina.prefijo}.titulo`] ?? "" },
+                      })
+                    }
+                  />
+                  <input
+                    type="text"
+                    aria-label={`Descripción SEO ${pagina.ruta}`}
+                    placeholder="Descripción (SEO)"
+                    className="mt-1.5 w-full rounded border px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
+                    value={seoTexto[`${pagina.prefijo}.descripcion`] ?? ""}
+                    onChange={(e) =>
+                      setSeoTexto((prev) => ({ ...prev, [`${pagina.prefijo}.descripcion`]: e.target.value }))
+                    }
+                    onBlur={() =>
+                      void sincronizar({
+                        textos: { [`${pagina.prefijo}.descripcion`]: seoTexto[`${pagina.prefijo}.descripcion`] ?? "" },
+                      })
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* Gestión del catálogo */}
           <section className="mt-2 rounded-lg border p-2.5">
             <h3 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
               <FolderKanban className="size-3 text-[var(--brand-acento)]" />
               Gestión del catálogo
             </h3>
-            <div className="mt-2 grid grid-cols-3 gap-1.5">
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
               <Button asChild variant="outline" size="sm" className="px-1 text-xs">
                 <Link to="/admin/productos">Productos</Link>
               </Button>
@@ -338,6 +401,9 @@ export function DockEditor({ persistir }: DockEditorProps) {
               </Button>
               <Button asChild variant="outline" size="sm" className="px-1 text-xs">
                 <Link to="/admin/servicios">Servicios</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="px-1 text-xs">
+                <Link to="/admin/blog">Blog</Link>
               </Button>
             </div>
           </section>

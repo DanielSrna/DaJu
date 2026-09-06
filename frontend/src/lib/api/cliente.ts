@@ -9,6 +9,7 @@ import type {
   CheckoutResultado,
   ContactoMensaje,
   Publicacion,
+  PublicacionInput,
   ApiError,
 } from "./tipos";
 
@@ -135,6 +136,20 @@ export const api = {
   },
   publicacionPorSlug: (slug: string) =>
     peticion<{ publicacion: Publicacion }>(`/publicaciones/${slug}`),
+
+  /** Admin: crear una publicación. */
+  crearPublicacion: (datos: PublicacionInput) =>
+    peticion<{ publicacion: Publicacion }>("/publicaciones", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    }),
+  actualizarPublicacion: (id: string, datos: Partial<PublicacionInput>) =>
+    peticion<{ publicacion: Publicacion }>(`/publicaciones/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(datos),
+    }),
+  eliminarPublicacion: (id: string) =>
+    peticion<unknown>(`/publicaciones/${id}`, { method: "DELETE" }),
 
   checkout: (datos: {
     paqueteId: string;

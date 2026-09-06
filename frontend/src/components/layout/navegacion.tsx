@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { LogIn, ExternalLink, Pencil, Hammer } from "lucide-react";
+import { LogIn, ExternalLink, Pencil, Hammer, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTema } from "@/lib/tema";
 import { useModoEdicion } from "@/lib/modo-edicion";
@@ -20,10 +21,10 @@ export function TopBar() {
 
   return (
     <div className="bg-[var(--brand-primario)] text-white">
-      <div className="mx-auto flex h-8 max-w-6xl items-center justify-end gap-3 px-4 text-xs">
+      <div className="mx-auto flex h-8 max-w-6xl items-center justify-end gap-2 px-4 text-xs">
         {modoEdicion ? (
           <>
-            <span className="font-semibold text-white/90">
+            <span className="hidden font-semibold text-white/90 sm:inline">
               Bienvenido Administrador
             </span>
             <div className="flex gap-1">
@@ -49,11 +50,14 @@ export function TopBar() {
                   <Hammer className="size-3" />
                   Desarrollo
                 </Link>
-              </Button>            </div>
+              </Button>
+            </div>
           </>
         ) : (
           <>
-            <span className="text-white/70">¿Ya tienes un proyecto con nosotros?</span>
+            <span className="hidden whitespace-nowrap text-white/70 sm:inline">
+              ¿Ya tienes un proyecto con nosotros?
+            </span>
             <Button
               asChild
               variant="ghost"
@@ -75,6 +79,18 @@ export function TopBar() {
 
 /** Barra de navegación de la vitrina. */
 export function Navbar() {
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
+  // Escape y navegación móvil cierran el menú.
+  useEffect(() => {
+    if (!menuAbierto) return;
+    const alTeclear = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") setMenuAbierto(false);
+    };
+    window.addEventListener("keydown", alTeclear);
+    return () => window.removeEventListener("keydown", alTeclear);
+  }, [menuAbierto]);
+
   return (
     <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
@@ -95,21 +111,54 @@ export function Navbar() {
           ))}
         </nav>
 
-        <Button asChild variant="accent" className="hidden md:inline-flex">
-          <Link to="/contacto">Cotizar proyecto</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="accent" className="hidden md:inline-flex">
+            <Link to="/contacto">Cotizar proyecto</Link>
+          </Button>
+
+          {/* Hamburguesa (solo móvil/tablet) */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label={menuAbierto ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={menuAbierto}
+            aria-controls="menu-movil"
+            onClick={() => setMenuAbierto((v) => !v)}
+          >
+            {menuAbierto ? <X className="size-6" /> : <Menu className="size-6" />}
+          </Button>
+        </div>
       </div>
 
-      {/* Navegación móvil */}
+      {/* Panel móvil desplegable */}
       <nav
+        id="menu-movil"
         aria-label="Principal móvil"
-        className="flex justify-center gap-1 overflow-x-auto border-t px-2 py-1 md:hidden"
+        aria-hidden={!menuAbierto}
+        className={`md:hidden ${menuAbierto ? "max-h-[26rem] opacity-100" : "max-h-0 opacity-0"} overflow-hidden border-t transition-all duration-200 ease-out`}
       >
-        {ENLACES.map((enlace) => (
-          <Button key={enlace.ruta} asChild variant="ghost" size="sm">
-            <Link to={enlace.ruta}>{enlace.nombre}</Link>
+        <div className="flex flex-col gap-1 px-4 py-3">
+          {ENLACES.map((enlace) => (
+            <Button
+              key={enlace.ruta}
+              asChild
+              variant="ghost"
+              size="sm"
+              className="justify-start"
+            >
+              <Link to={enlace.ruta} onClick={() => setMenuAbierto(false)}>
+                {enlace.nombre}
+              </Link>
+            </Button>
+          ))}
+          <Button asChild variant="accent" className="mt-2">
+            <Link to="/contacto" onClick={() => setMenuAbierto(false)}>
+              Cotizar proyecto
+            </Link>
           </Button>
-        ))}
+        </div>
       </nav>
     </header>
   );
@@ -128,7 +177,7 @@ export function Marquesina() {
 
   return (
     <div
-      className="marquesina-contenedor bg-[var(--brand-acento)] py-1.5"
+      className="marquesina-contenedor overflow-hidden bg-[var(--brand-acento)] py-1.5"
       aria-label={`Anuncio: ${texto}`}
     >
       <div className="marquesina-track text-sm font-semibold text-[var(--brand-primario)]">

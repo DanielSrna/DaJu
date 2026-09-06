@@ -202,6 +202,18 @@ export function FormularioProducto() {
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
           />
         </label>
+        <label className="block text-sm font-medium">
+          Moneda
+          <select
+            aria-label="Moneda"
+            value={form.moneda}
+            onChange={(e) => set("moneda", e.target.value)}
+            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
+          >
+            <option value="USD">USD</option>
+            <option value="COP">COP</option>
+          </select>
+        </label>
 
         <label className="block text-sm font-medium">
           Vistas incluidas
@@ -258,6 +270,40 @@ export function FormularioProducto() {
             rows={4}
             value={form.descripcion}
             onChange={(e) => set("descripcion", e.target.value)}
+            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
+          />
+        </label>
+
+        <label className="block text-sm font-medium sm:col-span-2">
+          Características (una por línea)
+          <textarea
+            rows={3}
+            aria-label="Características"
+            value={(form.features ?? []).join("\n")}
+            onChange={(e) => set("features", e.target.value.split("\n").map((s) => s.trim()).filter(Boolean))}
+            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
+          />
+        </label>
+
+        <label className="block text-sm font-medium sm:col-span-2">
+          Detalles (título: texto — uno por línea)
+          <textarea
+            rows={3}
+            aria-label="Detalles"
+            value={(form.detalles ?? []).map((d) => `${d.titulo}: ${d.texto}`).join("\n")}
+            onChange={(e) =>
+              set(
+                "detalles",
+                e.target.value
+                  .split("\n")
+                  .map((linea) => {
+                    const idx = linea.indexOf(":");
+                    if (idx === -1) return null;
+                    return { titulo: linea.slice(0, idx).trim(), texto: linea.slice(idx + 1).trim() };
+                  })
+                  .filter((d): d is { titulo: string; texto: string } => d !== null && d.titulo.length > 0),
+              )
+            }
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
           />
         </label>

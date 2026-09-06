@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useTema } from "@/lib/tema";
 import type { CarruselItem } from "@/lib/api/tipos";
@@ -10,15 +11,20 @@ interface Slide {
   key: string;
   titulo: string;
   texto: string;
+  link: string;
 }
 
 const OFERTAS_DEFECTO: Slide[] = [
-  { key: "def-1", titulo: "Lanza tu web en 10 días", texto: "Landing profesional con soporte incluido" },
-  { key: "def-2", titulo: "Tu negocio merece una web que venda", texto: "Web corporativa de hasta 4 vistas" },
-  { key: "def-3", titulo: "Datos claros para decidir mejor", texto: "Mini-dashboard con métricas y soporte" },
-  { key: "def-4", titulo: "Pagos con PSE, NEQUI y tarjetas", texto: "Cobra como tus clientes prefieren" },
-  { key: "def-5", titulo: "Soporte con garantía incluida", texto: "2, 6 o 12 meses según el paquete" },
-  { key: "def-6", titulo: "De la idea a la web lista", texto: "Briefing guiado en cada proyecto" },
+  { key: "def-1", titulo: "Lanza tu web en 10 días", texto: "Landing profesional con soporte incluido", link: "/productos/validor" },
+  { key: "def-2", titulo: "Tu negocio merece una web que venda", texto: "Web corporativa de hasta 4 vistas", link: "/productos/corporativo" },
+  { key: "def-3", titulo: "Datos claros para decidir mejor", texto: "Mini-dashboard con métricas y soporte", link: "/productos/operativo" },
+  { key: "def-4", titulo: "Pagos con PSE, NEQUI y tarjetas", texto: "Cobra como tus clientes prefieren", link: "/contacto" },
+  { key: "def-5", titulo: "Soporte con garantía incluida", texto: "2, 6 o 12 meses según el paquete", link: "/postventa" },
+  { key: "def-6", titulo: "De la idea a la web lista", texto: "Briefing guiado en cada proyecto", link: "/blog" },
+  { key: "def-7", titulo: "Plantillas listas para desplegar", texto: "Reservas, inventario y más", link: "/productos#plantillas" },
+  { key: "def-8", titulo: "Consultoría por sesiones", texto: "Auditorías, asesoría y aceleración", link: "/productos#consultoria" },
+  { key: "def-9", titulo: "Aprende sin tecnicismos", texto: "Conceptos y noticias en nuestro blog", link: "/blog" },
+  { key: "def-10", titulo: "Cuéntanos tu idea", texto: "Conversemos y cotizamos sin presión", link: "/contacto" },
 ];
 
 /** Posición de una carta según su distancia al centro (patrón coverflow). */
@@ -33,7 +39,7 @@ function offsetDe(distancia: number, n: number) {
 }
 
 function Tarjeta({ slide, oro }: { slide: Slide; oro: boolean }) {
-  return (
+  const contenido = (
     <article
       data-enfasis={oro ? "true" : "false"}
       className={`relative flex h-full w-full items-center overflow-hidden rounded-2xl px-5 shadow-lg ${
@@ -60,10 +66,32 @@ function Tarjeta({ slide, oro }: { slide: Slide; oro: boolean }) {
           </p>
         )}
       </div>
-      <ArrowRight
-        className={`absolute bottom-4 right-4 size-4 ${oro ? "text-[var(--brand-primario)]" : "text-[var(--brand-acento)]"}`}
-      />
+      {slide.link && (
+        <ArrowRight
+          className={`absolute bottom-4 right-4 size-4 ${oro ? "text-[var(--brand-primario)]" : "text-[var(--brand-acento)]"}`}
+        />
+      )}
     </article>
+  );
+
+  // La carta con enlace es navegable (link interno); sin enlace se queda estática.
+  // Los links del CMS pueden llegar absolutos: se normalizan a la ruta interna
+  // (así la carta siempre navega dentro de la web y no a un dominio ajeno).
+  const rutaInterna = slide.link
+    ? (() => {
+        try {
+          return new URL(slide.link).pathname + new URL(slide.link).search;
+        } catch {
+          return slide.link;
+        }
+      })()
+    : "";
+  return rutaInterna ? (
+    <Link to={rutaInterna} className="block h-full w-full focus-visible:outline-none" aria-label={slide.titulo}>
+      {contenido}
+    </Link>
+  ) : (
+    contenido
   );
 }
 
@@ -83,6 +111,7 @@ export function CarruselVertical() {
       key: item.id,
       titulo: item.titulo || "Oferta DaJu",
       texto: "",
+      link: item.link ?? "",
     }));
     const lista = [...delCms];
     const usados = new Set(lista.map((s) => s.titulo.toLowerCase()));

@@ -86,7 +86,34 @@ const METAS_EXACTAS: Record<string, MetaPagina> = {
   },
 };
 
-export function metaDeRuta(pathname: string): MetaPagina {
+/** Prefijo de clave por ruta (para SEO editable desde el CMS). */
+const PREFIJOS_META: Record<string, string> = {
+  "/": "meta.inicio",
+  "/productos": "meta.productos",
+  "/blog": "meta.blog",
+  "/faq": "meta.faq",
+  "/contacto": "meta.contacto",
+  "/postventa": "meta.postventa",
+};
+
+/**
+ * Meta de una ruta, usando el texto del CMS si el admin lo personalizó
+ * (claves `meta.<pagina>.titulo` / `meta.<pagina>.descripcion`), con el
+ * fallback estático de la vitrina.
+ */
+export function metaDeRuta(pathname: string, textos?: Record<string, string>): MetaPagina {
+  const base = metaBase(pathname);
+  const prefijo = PREFIJOS_META[pathname];
+  if (prefijo && textos) {
+    const titulo = textos[`${prefijo}.titulo`]?.trim();
+    const descripcion = textos[`${prefijo}.descripcion`]?.trim();
+    if (titulo) return { titulo, descripcion: descripcion || base.descripcion };
+    if (descripcion) return { titulo: base.titulo, descripcion };
+  }
+  return base;
+}
+
+function metaBase(pathname: string): MetaPagina {
   const exacta = METAS_EXACTAS[pathname];
   if (exacta) return exacta;
 

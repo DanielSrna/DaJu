@@ -12,6 +12,7 @@ export function ListaProductos() {
   const [paquetes, setPaquetes] = useState<Paquete[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState<Paquete | null>(null);
+  const [confirmacionEscribir, setConfirmacionEscribir] = useState("");
 
   const cargar = (): void => {
     setPaquetes(null);
@@ -173,13 +174,34 @@ export function ListaProductos() {
           <div className="w-full max-w-sm rounded-lg border bg-background p-5">
             <h3 className="font-bold">¿Eliminar "{confirmando.nombre}"?</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Esta acción es permanente y no se puede deshacer. Considera "Desactivar" para retirarlo sin borrar.
+              Esta acción es permanente. Escribe <strong>ELIMINAR</strong> para confirmar.
             </p>
+            <input
+              type="text"
+              aria-label="Confirmar eliminar"
+              placeholder="ELIMINAR"
+              value={confirmacionEscribir}
+              onChange={(e) => setConfirmacionEscribir(e.target.value)}
+              className="mt-3 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-red-500"
+            />
             <div className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setConfirmando(null)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setConfirmando(null);
+                  setConfirmacionEscribir("");
+                }}
+              >
                 Cancelar
               </Button>
-              <Button variant="accent" size="sm" className="bg-red-600 hover:bg-red-700" onClick={() => void eliminarPermanente(confirmando)}>
+              <Button
+                variant="accent"
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 disabled:opacity-40"
+                disabled={confirmacionEscribir !== "ELIMINAR"}
+                onClick={() => void eliminarPermanente(confirmando)}
+              >
                 Eliminar
               </Button>
             </div>

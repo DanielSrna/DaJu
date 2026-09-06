@@ -48,6 +48,38 @@ const PREGUNTAS: Pregunta[] = [
     respuesta:
       "Puedes sumar funcionalidades adicionales con precio según su complejidad, o comprar el paquete base y negociar una funcionalidad especial con nosotros.",
   },
+  {
+    pregunta: "¿Por qué necesito una web si ya me va bien con Instagram?",
+    respuesta:
+      "Instagram te presta el canal: la web te da independencia. En la web controlas tu información, tu listado y tus ofertas sin depender de un algoritmo, y las personas investigan en Google antes de contactarte (8 de cada 10 lo hacen).",
+  },
+  {
+    pregunta: "¿Cómo sé que el proyecto va a funcionar?",
+    respuesta:
+      "Trabajamos con estándares de calidad de producto (ISO/IEC 25000) y procesos alineados a ISO 9001. Además, cada proyecto pasa por pruebas antes de publicarse y lo ajustamos dentro de la garantía.",
+  },
+  {
+    pregunta: "¿Puedo pagar en cuotas o con otro método?",
+    respuesta:
+      "Sí. El checkout permite pagar con tarjeta, PSE o billeteras móviles como NEQUI y Daviplata (a través de la pasarela de pagos). Puedes ponerte en contacto si necesitas una facilidad especial.",
+  },
+  {
+    pregunta: "¿Qué pasa si quiero cambiar el diseño después de la entrega?",
+    respuesta:
+      "Durante la garantía lo ajustamos sin costo. Pasada la garantía, los cambios se cotizan según el alcance: siempre sabrás cuánto cuesta antes de aprobarlo.",
+  },
+  {
+    pregunta: "¿Ofrecen plantillas listas para usar?",
+    respuesta:
+      "Sí: tenemos plantillas de reservas, inventario y cotizadores listas para desplegar en días. Tú asumes el costo de la nube y nosotros lo dejamos funcionando. También puedes sumar funciones extra.",
+    concepto: "funcionalidades-extra-para-tu-web",
+  },
+  {
+    pregunta: "¿Hacen acompañamiento cuando estoy arrancando?",
+    respuesta:
+      "Sí, y es lo que más disfrutamos. Tu proyecto arranca con un briefing guiado y lo llevamos de la mano: defines tu negocio, nosotros hacemos el resto.",
+    concepto: "proceso-de-un-proyecto-web",
+  },
 ];
 
 export function FAQ() {
