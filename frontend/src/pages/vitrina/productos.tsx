@@ -2,18 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
-  BookOpenCheck,
+  Blocks,
   Check,
   Clock,
   Code2,
   HelpCircle,
   ImageIcon,
   Layers,
-  Lightbulb,
-  MessagesSquare,
-  Rocket,
-  SearchCheck,
-  Table2,
+  Tag,
 } from "lucide-react";
 import {
   Accordion,
@@ -24,7 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/cliente";
-import type { Paquete } from "@/lib/api/tipos";
+import { useTema } from "@/lib/tema";
+import { precioConDescuento, diasHabitilesConExtra, descuentoAplicable, recomendacionesDePaquetes } from "@/lib/cms";
+import type { Paquete, Oferta } from "@/lib/api/tipos";
 
 /**
  * Placeholder visual para paquetes sin imagen:
@@ -56,74 +54,6 @@ const DESCRIPCION_TIPO: Record<Paquete["tipo"], string> = {
   operativo: "Para digitalizar tu operación",
 };
 
-interface Plantilla {
-  icono: typeof Rocket;
-  nombre: string;
-  descripcion: string;
-  features: string[];
-  desde: number;
-}
-
-/** Plantillas: solución web lista para desplegar. El cliente asume la nube. */
-const PLANTILLAS: Plantilla[] = [
-  {
-    icono: BookOpenCheck,
-    nombre: "Plantilla Reservas",
-    descripcion:
-      "Web lista para que tus clientes reserven citas o turnos y tú las administres sin planillas.",
-    features: ["Calendario de disponibilidad", "Confirmaciones por correo", "Panel simple para el negocio"],
-    desde: 550000,
-  },
-  {
-    icono: Table2,
-    nombre: "Plantilla Inventario",
-    descripcion:
-      "Solución para llevar tus productos y existencias en línea, lista para desplegar.",
-    features: ["Registro de productos", "Control de existencias", "Informes básicos de movimiento"],
-    desde: 650000,
-  },
-  {
-    icono: MessagesSquare,
-    nombre: "Plantilla Cotizador",
-    descripcion:
-      "Tus clientes arman su pedido o cotización desde la web y llegan a tu correo listos para responder.",
-    features: ["Formulario por pasos", "Cálculo de precios", "Notificación al negocio"],
-    desde: 500000,
-  },
-];
-
-interface Consultoria {
-  icono: typeof SearchCheck;
-  titulo: string;
-  descripcion: string;
-  para: string;
-}
-
-/** Consultoría: servicios de alto nivel agendados por sesiones. */
-const CONSULTORIAS: Consultoria[] = [
-  {
-    icono: SearchCheck,
-    titulo: "Auditoría de código",
-    descripcion:
-      "Revisión experta de un proyecto existente: calidad, seguridad y deuda técnica con plan de acción.",
-    para: "Para quien ya tiene web o sistema y sospecha que algo no está bien.",
-  },
-  {
-    icono: Rocket,
-    titulo: "Aceleración de proyectos",
-    descripcion:
-      "Nos sumamos a tu equipo por sesiones para destrabar lo que se quedó estancado.",
-    para: "Para startups y equipos con entregas atrasadas o bloqueos técnicos.",
-  },
-  {
-    icono: Lightbulb,
-    titulo: "Asesoría técnica",
-    descripcion:
-      "Resuelve tus dudas de arquitectura, tecnología o decisión de compra con un ingeniero.",
-    para: "Para quien quiere tomar decisiones informadas antes de invertir.",
-  },
-];
-
 /** Filas de la comparativa (se renderizan con los datos reales del paquete). */
 const FILAS_COMPARATIVA = [
   {
@@ -149,47 +79,35 @@ const FILAS_COMPARATIVA = [
   },
 ];
 
-interface Recomendacion {
-  tipo: Paquete["tipo"];
-  pregunta: string;
-  texto: string;
-}
-
-const RECOMENDACIONES: Recomendacion[] = [
-  {
-    tipo: "validor",
-    pregunta: "¿Estás arrancando y quieres validar tu idea en internet?",
-    texto:
-      "Empezar no requiere una web gigante: una sola vista enfocada en convertir, con entrega rápida y 2 meses de soporte, es suficiente para probar tu idea sin sobre-invertir.",
-  },
-  {
-    tipo: "corporativo",
-    pregunta: "¿Ya tienes negocio y necesitas presencia seria?",
-    texto:
-      "Si necesitas que te encuentren, te entiendan y te contacten, una web de hasta 4 vistas con 6 meses de soporte te da la credibilidad que tu negocio en marcha merece.",
-  },
-  {
-    tipo: "operativo",
-    pregunta: "¿Quieres dejar las planillas y ver tus datos en un panel?",
-    texto:
-      "Si tu operación ya no cabe en la memoria ni en el cuaderno, un mini-dashboard con CRUD y métricas a tu medida —con 1 año de soporte— es el siguiente paso natural.",
-  },
-];
-
 export function Productos() {
   const [paquetes, setPaquetes] = useState<Paquete[] | null>(null);
+  const [ofertas, setOfertas] = useState<Oferta[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { cms } = useTema();
+
+  const hayDescuento = descuentoAplicable(cms);
+  const diasMostrar = (base: number): number => diasHabitilesConExtra(base, cms.diasExtra);
 
   const cargar = (): void => {
     setPaquetes(null);
     setError(null);
-    api
-      .paquetes()
-      .then((r) => setPaquetes(r.paquetes))
+    Promise.all([api.paquetes(), api.ofertas()])
+      .then(([p, o]) => {
+        setPaquetes(p.paquetes);
+        setOfertas(o.ofertas);
+      })
       .catch(() => setError("No pudimos cargar los productos. Intenta de nuevo."));
   };
 
-  useEffect(cargar, []);
+  useEffect(() => {
+    cargar();
+  }, []);
+
+  const plantillas = ofertas.filter((o) => o.tipo === "plantilla");
+  const servicios = ofertas.filter((o) => o.tipo === "consultoria");
+  const recomendaciones = paquetes ? recomendacionesDePaquetes(paquetes) : [];
+  const hayContenido =
+    (paquetes?.length ?? 0) > 0 || plantillas.length > 0 || servicios.length > 0;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14">
@@ -290,12 +208,24 @@ export function Productos() {
 
                     <div className="mt-auto pt-6">
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-2xl font-bold text-[var(--brand-primario)]">
-                          ${paquete.precio.toLocaleString("es-CO")}
+                        <span className="relative">
+                          {hayDescuento && (
+                            <span className="absolute -top-3 left-0 inline-block rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                              -{cms.descuento.porcentaje}%
+                            </span>
+                          )}
+                          <span className="text-2xl font-bold text-[var(--brand-primario)]">
+                            ${precioConDescuento(paquete.precio, cms.descuento.porcentaje).toLocaleString("es-CO")}
+                          </span>
+                          {hayDescuento && (
+                            <span className="ml-1.5 text-sm text-muted-foreground line-through opacity-55">
+                              ${paquete.precio.toLocaleString("es-CO")}
+                            </span>
+                          )}
                         </span>
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
                           <Clock className="size-3" />
-                          {paquete.diasEntrega} días hábiles
+                          {diasMostrar(paquete.diasEntrega)} días hábiles
                         </span>
                       </div>
                       <Button asChild className="mt-4 w-full" variant="accent">
@@ -314,7 +244,7 @@ export function Productos() {
       </section>
 
       {/*
-        Plantillas: soluciones web listas para desplegar.
+        Plantillas: soluciones web listas para desplegar (datos del CMS).
         El cliente asume los costos de nube y puede sumar funciones.
       */}
       <section id="plantillas" className="mt-16 scroll-mt-24">
@@ -325,18 +255,18 @@ export function Productos() {
           Puedes sumar funciones por costo adicional.
         </p>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {PLANTILLAS.map(({ icono: Icono, nombre, descripcion, features, desde }) => (
+          {plantillas.map((o) => (
             <article
-              key={nombre}
+              key={o.id}
               className="flex flex-col rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="flex size-11 items-center justify-center rounded-lg bg-[var(--brand-primario)] text-[var(--brand-acento)]">
-                <Icono className="size-5" />
+                <Blocks className="size-5" />
               </div>
-              <h3 className="mt-4 text-lg font-bold">{nombre}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{descripcion}</p>
+              <h3 className="mt-4 text-lg font-bold">{o.nombre}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{o.descripcion}</p>
               <ul className="mt-4 space-y-2">
-                {features.map((f) => (
+                {o.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
                     <Check className="mt-0.5 size-4 shrink-0 text-[var(--brand-acento)]" />
                     {f}
@@ -344,11 +274,21 @@ export function Productos() {
                 ))}
               </ul>
               <div className="mt-auto pt-5">
-                <p className="inline-flex items-baseline gap-1.5 rounded-full border border-[var(--brand-acento)]/40 bg-[var(--brand-acento)]/10 px-3 py-1">
+                <p className="relative inline-flex items-baseline gap-1.5 rounded-full border border-[var(--brand-acento)]/40 bg-[var(--brand-acento)]/10 px-3 py-1">
+                  {hayDescuento && (
+                    <span className="absolute -top-3.5 left-0 inline-block rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      -{cms.descuento.porcentaje}%
+                    </span>
+                  )}
                   Desde{" "}
                   <span className="text-lg font-bold text-[var(--brand-primario)]">
-                    ${desde.toLocaleString("es-CO")}
+                    ${precioConDescuento(o.desde ?? 0, cms.descuento.porcentaje).toLocaleString("es-CO")}
                   </span>
+                  {hayDescuento && (
+                    <span className="ml-0.5 text-xs text-muted-foreground line-through opacity-55">
+                      ${(o.desde ?? 0).toLocaleString("es-CO")}
+                    </span>
+                  )}
                   <span className="text-xs font-medium text-muted-foreground">
                     + nube
                   </span>
@@ -376,20 +316,28 @@ export function Productos() {
           precio depende del alcance de cada sesión.
         </p>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {CONSULTORIAS.map(({ icono: Icono, titulo, descripcion, para }) => (
+          {servicios.map((o) => (
             <article
-              key={titulo}
+              key={o.id}
               className="flex flex-col rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="flex size-11 items-center justify-center rounded-lg bg-[var(--brand-primario)] text-[var(--brand-acento)]">
-                <Icono className="size-5" />
+                <Code2 className="size-5" />
               </div>
-              <h3 className="mt-4 text-lg font-bold">{titulo}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{descripcion}</p>
-              <p className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[var(--brand-primario)]/10 bg-[var(--brand-primario)]/[0.04] px-3 py-2 text-xs text-muted-foreground">
-                <Code2 className="size-3.5 shrink-0 text-[var(--brand-acento)]" />
-                {para}
-              </p>
+              <h3 className="mt-4 text-lg font-bold">{o.nombre}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{o.descripcion}</p>
+              {o.para && (
+                <p className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[var(--brand-primario)]/10 bg-[var(--brand-primario)]/[0.04] px-3 py-2 text-xs text-muted-foreground">
+                  <Code2 className="size-3.5 shrink-0 text-[var(--brand-acento)]" />
+                  {o.para}
+                </p>
+              )}
+              {hayDescuento && (
+                <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-red-600/10 px-2.5 py-1 text-xs font-semibold text-red-700">
+                  <Tag className="size-3" />
+                  -{cms.descuento.porcentaje}% en sesiones durante la promo
+                </p>
+              )}
               <div className="mt-auto pt-5">
                 <Button asChild className="w-full" variant="accent">
                   <Link to="/contacto">
@@ -405,9 +353,11 @@ export function Productos() {
 
       {/*
         ¿No sabes qué elegir?: comparativa y recomendaciones en un
-        desplegable, para quien aún duda entre paquetes.
+        desplegable, para quien aún duda entre ofertas. Se adapta a los
+        paquetes/plantillas/servicios que existan (omitida si no hay nada).
       */}
-      <section id="no-sabes-que-elegir" className="mt-16 scroll-mt-24">
+      {hayContenido && (
+        <section id="no-sabes-que-elegir" className="mt-16 scroll-mt-24">
         <div className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-[var(--brand-primario)]/[0.06] via-transparent to-[var(--brand-acento)]/[0.08]">
           {/* Barra de acento superior */}
           <div className="h-2 w-full bg-gradient-to-r from-[var(--brand-primario)] via-[var(--brand-acento)] to-[var(--brand-primario)]" />
@@ -446,10 +396,10 @@ export function Productos() {
                       <div className="overflow-x-auto">
                         <table className="w-full min-w-[640px] border-collapse text-left text-sm">
                           <thead>
-                            <tr className="bg-[var(--brand-primario)] text-white">
-                              <th className="p-4 font-semibold">Característica</th>
+                            <tr className="border-b">
+                              <th className="p-4 font-bold">Característica</th>
                               {paquetes.map((p) => (
-                                <th key={p.id} className="p-4 font-semibold">
+                                <th key={p.id} className="p-4 font-bold">
                                   {p.nombre}
                                 </th>
                               ))}
@@ -477,6 +427,24 @@ export function Productos() {
                                 ))}
                               </tr>
                             ))}
+                            {hayDescuento && (
+                              <tr className="border-b last:border-0 odd:bg-muted/40">
+                                <th
+                                  scope="row"
+                                  className="p-4 align-middle font-medium text-muted-foreground"
+                                >
+                                  Precio con descuento
+                                </th>
+                                {paquetes.map((p) => (
+                                  <td key={p.id} className="p-4 align-middle font-bold text-[var(--brand-primario)]">
+                                    ${precioConDescuento(p.precio, cms.descuento.porcentaje).toLocaleString("es-CO")}
+                                    <span className="ml-1.5 text-xs font-normal text-muted-foreground line-through opacity-55">
+                                      ${p.precio.toLocaleString("es-CO")}
+                                    </span>
+                                  </td>
+                                ))}
+                              </tr>
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -490,46 +458,76 @@ export function Productos() {
                   </AccordionContent>
                 </AccordionItem>
 
-                {RECOMENDACIONES.map((rec) => {
-                  const paquete = paquetes?.find((p) => p.tipo === rec.tipo) ?? null;
-                  return (
-                    <AccordionItem
-                      key={rec.tipo}
-                      value={`recomendacion-${rec.tipo}`}
-                      className="border-b last:border-0"
-                    >
-                      <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
-                        {rec.pregunta}
-                      </AccordionTrigger>
-                      <AccordionContent className="px-4 pb-5 sm:px-6">
-                        <p className="leading-relaxed">{rec.texto}</p>
-                        <div className="mt-4 flex flex-wrap items-center gap-3">
-                          {paquete && (
-                            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--brand-acento)]/15 px-3 py-1 text-sm font-semibold text-[var(--brand-primario)]">
-                              <Check className="size-4" />
-                              Recomendado: {paquete.nombre}
-                            </span>
-                          )}
-                          <p className="text-sm text-muted-foreground">
-                            {paquete
-                              ? DESCRIPCION_TIPO[paquete.tipo].toLowerCase() + "."
-                              : "La recomendación depende del momento de tu negocio: lo conversamos sin compromiso."}
-                          </p>
-                        </div>
-                        {paquete && (
-                          <div className="mt-4">
-                            <Button asChild variant="outline">
-                              <Link to={`/productos/${paquete.slug}`}>
-                                Ver el paquete {paquete.nombre} en detalle
-                                <ArrowRight />
-                              </Link>
-                            </Button>
+                {recomendaciones.map((rec) => (
+                  <AccordionItem
+                    key={rec.paqueteId}
+                    value={`recomendacion-${rec.paqueteId}`}
+                    className="border-b last:border-0"
+                  >
+                    <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
+                      {rec.pregunta}
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-5 sm:px-6">
+                      <p className="leading-relaxed">{rec.texto}</p>
+                      <p className="mt-3 text-sm text-muted-foreground">{rec.detalles}</p>
+                      <div className="mt-4">
+                        <Button asChild variant="outline">
+                          <Link to={`/productos/${rec.slug}`}>
+                            Ver este producto en detalle
+                            <ArrowRight />
+                          </Link>
+                        </Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+
+                {plantillas.length > 0 && (
+                  <AccordionItem value="plantillas" className="border-b last:border-0">
+                    <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
+                      Plantillas listas para desplegar
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-5 sm:px-6">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {plantillas.map((o) => (
+                          <div key={o.id} className="rounded-lg border p-3">
+                            <p className="font-semibold">{o.nombre}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">{o.descripcion}</p>
+                            {o.desde != null && (
+                              <p className="mt-2 text-sm font-bold text-[var(--brand-primario)]">
+                                Desde ${precioConDescuento(o.desde, cms.descuento.porcentaje).toLocaleString("es-CO")}
+                                {hayDescuento && (
+                                  <span className="ml-1 text-xs font-normal text-muted-foreground line-through opacity-55">
+                                    ${o.desde.toLocaleString("es-CO")}
+                                  </span>
+                                )}
+                              </p>
+                            )}
                           </div>
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                {servicios.length > 0 && (
+                  <AccordionItem value="servicios" className="border-b last:border-0">
+                    <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
+                      Consultoría por sesiones
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-5 sm:px-6">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {servicios.map((o) => (
+                          <div key={o.id} className="rounded-lg border p-3">
+                            <p className="font-semibold">{o.nombre}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">{o.descripcion}</p>
+                            {o.para && <p className="mt-2 text-xs text-muted-foreground">{o.para}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
 
                 <AccordionItem value="negociar" className="border-b last:border-0">
                   <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
@@ -557,7 +555,8 @@ export function Productos() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

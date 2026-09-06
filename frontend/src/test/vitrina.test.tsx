@@ -40,24 +40,28 @@ describe("Vitrina DaJu", () => {
     expect(screen.getByText("404")).toBeInTheDocument();
   });
 
-  it("el portal de cliente muestra 'zona en construcción'", () => {
+  it("el acceso de cliente muestra el formulario de inicio de sesión", () => {
     renderApp("/cliente/login");
+    expect(screen.getByRole("heading", { name: "Inicia sesión" })).toBeInTheDocument();
+    expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
+  });
+
+  it("las demás rutas del portal de cliente siguen en construcción", () => {
+    renderApp("/cliente/proyectos");
     expect(screen.getByText("Zona en construcción")).toBeInTheDocument();
   });
 
   it("los errores de API muestran estado con reintento (sin pantalla blanca)", async () => {
     renderApp("/productos");
+    // Con la API caída no hay ofertas estáticas: la sección de ayuda se oculta.
     expect(
-      screen.getByRole("heading", { name: /Auditoría de código/ }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "¿No sabes qué elegir?" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Comparativa: los tres paquetes lado a lado/i),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "¿No sabes qué elegir?" }),
+    ).not.toBeInTheDocument();
     expect(
       await screen.findByText(/no pudimos cargar los productos/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Reintentar" }),
     ).toBeInTheDocument();
   });
 
@@ -101,20 +105,26 @@ describe("Vitrina DaJu", () => {
     ).toBeInTheDocument();
   });
 
-  it("productos muestra las familias (paquetes, plantillas y consultoría) incluso si la API falla", async () => {
+  it("productos muestra los títulos de las familias aunque la API falle", async () => {
     renderApp("/productos");
 
+    // Los títulos de sección son estáticos; las tarjetas de plantillas/servicios
+    // vienen de la API (ya no hay contenido estático).
     expect(
       screen.getByRole("heading", { name: "Plantillas listas para desplegar" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Plantilla Reservas/ })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Consultoría por sesiones" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Auditoría de código/ })).toBeInTheDocument();
     expect(
       await screen.findByText(/no pudimos cargar los productos/i),
     ).toBeInTheDocument();
+  });
+
+  it("la sección de resultados no muestra 'Conoce más aquí →' sin publicaciones cargadas", () => {
+    renderApp("/");
+    // Con fetch sin respuesta, el mapa de publicaciones queda vacío → sin enlaces.
+    expect(screen.queryByRole("link", { name: /conoce más aquí →/i })).not.toBeInTheDocument();
   });
 
   it("aplica meta tags (title y description) por ruta", () => {

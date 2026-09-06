@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo · Ambiente festivo DaJu</title>
+  <link rel="icon" href="data:," />
+
+  <!-- Librerías: partículas (tsparticles), fuegos (canvas-confetti) y movimiento SVG (anime.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.12.0/tsparticles.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+
+  <style>
+    :root {
+      --brand-primario: #ffffff;
+      --brand-accent: #abcdef;
+      --tema-primario: #123456;
+      --tema-accent: #abcdef;
+      --texto: #0f172a;
+      --suave: #334155;
+      --superficie: #eef2f7;
+      --borde: #d9e1ea;
+    }
+
+    body[data-tema="navidad"] {
+      --tema-primario: #7f1d1d;
+      --tema-accent: #fbbf24;
+      --texto: #fdf1e5;
+      --suave: #e0c9bf;
+      --superficie: #241318;
+      --borde: #4a2530;
+    }
+    body[data-tema="navidad"] .card {
+      background: #3a1c22;
+      border-color: #4f2731;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+    body[data-tema="navidad"] .card h3 { color: #f7d9a8; }
+    body[data-tema="navidad"] .card p { color: #e8d3cf; }
+    body[data-tema="navidad"] .seccion-titulo { color: #f7d9a8; }
+    body[data-tema="navidad"] .seccion-sub { color: #d9bcb2; }
+    body[data-tema="navidad"] .logo { color: #f7d9a8; }
+    body[data-tema="navidad"] .logo span { color: var(--tema-accent); }
+    body[data-tema="navidad"] .hero {
+      background: linear-gradient(150deg, #8c1d1f, color-mix(in srgb, #7f1d1d 60%, #000) 80%);
+      border: 1px solid rgba(251, 191, 36, 0.18);
+    }
+    body[data-tema="navidad"] nav a { color: #dcc3b8; }
+    body[data-tema="navidad"] nav a:hover { color: #fdf1e5; }
+    body[data-tema="halloween"] {
+      --tema-primario: #1e1b2e;
+      --tema-accent: #ff7a00;
+      --texto: #1e1b2e;
+      --suave: #4a4358;
+      --superficie: #f2e8f5;
+      --borde: #d9c7e0;
+    }
+    body[data-tema="aniversario"] {
+      --tema-primario: #123456;
+      --tema-accent: #f6b10e;
+      --texto: #0f172a;
+      --suave: #334155;
+      --superficie: #fdf8ec;
+      --borde: #e8dcc0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--texto);
+      background: var(--superficie);
+      min-height: 100vh;
+    }
+
+    /* Capas de animación: siempre detrás del contenido y sin clicks */
+    #particles {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    /* La nieve se ve sobre fondos claros gracias al tinte y una sombra suave */
+    #particles canvas {
+      filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.35));
+    }
+    /* Capa de ambiente (telaraña/araña/bat): por ENCIMA del contenido.
+       pointer-events none para no bloquear clicks; la nieve va detrás. */
+    .capas-ambiente {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      pointer-events: none;
+      visibility: hidden;
+    }
+    body[data-tema="halloween"] .capas-ambiente { visibility: visible; }
+
+    /* Contenido por encima */
+    .contenido {
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px 24px 14px;
+    }
+    .logo { font-weight: 800; font-size: 20px; color: var(--tema-primario); }
+    .logo span { color: var(--tema-accent); }
+    nav a {
+      color: var(--suave);
+      margin-left: 22px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    nav a:hover { color: var(--tema-primario); text-decoration: underline; }
+
+    main { max-width: 1080px; margin: 0 auto; padding: 0 24px 90px; }
+
+    .hero {
+      border-radius: 24px;
+      background: linear-gradient(150deg, var(--tema-primario), color-mix(in srgb, var(--tema-primario) 55%, #000) 70%);
+      color: #fff;
+      padding: 96px 48px;
+      margin-top: 24px;
+      box-shadow: 0 24px 60px rgba(2, 8, 20, 0.25);
+    }
+    .hero small {
+      display: inline-block;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--tema-accent);
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.1; }
+    .hero p { margin-top: 20px; max-width: 560px; color: rgba(255,255,255,0.75); font-size: 17px; line-height: 1.6; }
+    .botones { margin-top: 32px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .boton {
+      border: 0;
+      cursor: pointer;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-weight: 700;
+      background: var(--tema-accent);
+      color: #fff;
+      transition: transform 0.16s ease-out;
+    }
+    .boton:hover { transform: scale(0.98); }
+    .boton.borde { background: transparent; border: 1px solid rgba(255,255,255,0.45); }
+
+    /* Selector de tema (barra en el pie) */
+    .selector {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 18px;
+      z-index: 50;
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(10px);
+      padding: 8px;
+      border-radius: 999px;
+      box-shadow: 0 12px 30px rgba(2, 8, 20, 0.35);
+    }
+    .selector button {
+      border: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      background: transparent;
+      transition: background 0.18s ease-out;
+    }
+    .selector button[aria-pressed="true"] { background: #ffffff22; color: #fff; }
+    .selector button:hover:not([aria-pressed="true"]) { background: #ffffff11; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+      margin-top: 22px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid var(--borde);
+      border-radius: 18px;
+      padding: 26px;
+      box-shadow: 0 8px 24px rgba(2, 8, 20, 0.05);
+    }
+    .card h3 { color: var(--tema-primario); margin-bottom: 10px; }
+    .card p { color: var(--suave); line-height: 1.65; font-size: 15px; }
+
+    .seccion-titulo { margin-top: 72px; color: var(--tema-primario); font-size: 26px; }
+    .seccion-sub { color: var(--suave); line-height: 1.6; max-width: 640px; margin-top: 10px; }
+
+    /* ---------- Halloween: telaraña, araña y murciélago ---------- */
+    .telarana {
+      position: absolute;
+      top: 0; right: 0;
+      width: 320px; height: 320px;
+      opacity: 0.9;
+    }
+    .arana {
+      position: absolute;
+      right: 158px; top: 4px;
+      width: 54px; height: 340px;
+    }
+    .arana svg { width: 100%; height: 100%; }
+    .murcielago {
+      position: absolute;
+      top: 14%;
+      left: 0;
+      width: 92px; height: 64px;
+      opacity: 0;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.28));
+    }
+    .murcielago.flip svg { transform: scaleX(-1); }
+
+    /* Calabaza decorativa en la esquina inferior izquierda */
+    .calabaza {
+      position: absolute;
+      left: 30px;
+      bottom: 34px;
+      width: 128px;
+      opacity: 0.95;
+      filter: drop-shadow(0 8px 18px rgba(232, 115, 12, 0.35));
+    }
+    .calabaza svg { width: 100%; height: auto; display: block; }
+    /* La araña baja por el hilo con anime.js; repetición con delay entre pasadas */
+    @media (prefers-reduced-motion: reduce) {
+      .capas-ambiente [data-animada="true"] { animation: none !important; }
+    }
+  </style>
+</head>
+<body data-tema="navidad">
+
+  <!-- Nieve (tsparticles) -->
+  <div id="particles"></div>
+
+  <!-- Halloween: telaraña + araña + murciélago -->
+  <div class="capas-ambiente" aria-hidden="true">
+    <svg class="telarana" viewBox="0 0 260 260">
+      <g stroke="rgba(0,0,0,0.45)" fill="none">
+        <path d="M260 0 L0 0 L0 260" />
+        <path d="M260 0 L0 130 L0 260 M260 0 L130 0 M260 0 L0 66 M260 0 L66 130" />
+        <path d="M60 0 Q60 60 0 60 M130 0 Q130 130 0 130 M0 130 Q130 130 130 0" />
+        <path d="M0 0 L66 130 L130 0 M0 0 L0 130 L130 130" opacity="0.6"/>
+      </g>
+    </svg>
+    <div class="arana" data-animada="true">
+      <svg viewBox="0 0 54 400">
+        <!-- Hilo largo desde la intersección de la telaraña hasta el cuerpo -->
+        <line id="hilo-arana" x1="27" y1="0" x2="27" y2="180" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" />
+        <g transform="translate(0 96) scale(0.95)">
+          <g fill="rgba(20,16,30,0.92)">
+            <circle cx="27" cy="22" r="4.5" />
+            <circle cx="27" cy="42" r="7" />
+            <path d="M24 20 q-8 -7 -12 -3 q6 1 11 6z M30 20 q8 -7 12 -3 q-6 1 -11 6z" />
+            <path d="M24 24 q-9 -2 -13 3 q6 0 12 3z M30 24 q9 -2 13 3 q-6 0 -12 3z" />
+            <path d="M24 30 q-8 2 -12 8 q6 -1 11 -5z M30 30 q8 2 12 8 q-6 -1 -11 -5z" />
+            <path d="M24 36 q-7 5 -10 11 q5 -2 10 -7z M30 36 q7 5 10 11 q-5 -2 -10 -7z" />
+            <circle cx="25.4" cy="20" r="0.9" fill="#fff" />
+            <circle cx="28.6" cy="20" r="0.9" fill="#fff" />
+          </g>
+        </g>
+      </svg>
+    </div>
+    <!-- Calabaza en la esquina inferior izquierda -->
+    <div class="calabaza" aria-hidden="true">
+      <svg viewBox="0 0 128 96">
+        <path d="M60 26 C58 16 66 8 76 6 C72 16 68 22 65 26 Z" fill="#3f6212" />
+        <path d="M60 26 C56 22 48 18 40 20 C48 22 54 26 60 28 Z" fill="#65a30d" />
+        <ellipse cx="24" cy="58" rx="16" ry="26" fill="#c2410c" />
+        <ellipse cx="104" cy="58" rx="16" ry="26" fill="#c2410c" />
+        <ellipse cx="64" cy="58" rx="36" ry="30" fill="#ea580c" />
+        <ellipse cx="44" cy="58" rx="12" ry="28" fill="#f97316" />
+        <ellipse cx="84" cy="58" rx="12" ry="28" fill="#f97316" />
+        <ellipse cx="64" cy="52" rx="7" ry="20" fill="#fb923c" opacity="0.7" />
+        <!-- Cara tallada -->
+        <g fill="#180a04">
+          <polygon points="50,50 56,44 57,53" />
+          <polygon points="70,50 76,44 78,53" />
+          <circle cx="53.5" cy="49" r="1.6" fill="#ffb45e" />
+          <circle cx="74" cy="49" r="1.6" fill="#ffb45e" />
+          <path d="M50 66 Q64 76 78 66" stroke="#180a04" stroke-width="4" fill="none" stroke-linecap="round" />
+        </g>
+      </svg>
+    </div>
+    <svg class="murcielago" viewBox="0 0 92 64">
+      <path fill="rgba(20,16,30,0.95)" d="M46 18 C40 8 26 4 14 10 C8 13 4 20 2 30 C8 26 12 26 14 28 C10 33 10 40 14 46 C18 40 24 36 30 38 C34 50 44 56 46 56 C48 56 58 50 62 38 C68 36 74 40 78 46 C82 40 82 33 78 28 C80 26 84 26 90 30 C88 20 84 13 78 10 C66 4 52 8 46 18 Z" />
+      <circle cx="36" cy="24" r="1.6" fill="#fef3c7" />
+      <circle cx="56" cy="24" r="1.6" fill="#fef3c7" />
+    </svg>
+  </div>
+
+  <!-- Contenido demo (lorem ipsum) -->
+  <div class="contenido">
+    <header>
+      <div class="logo">Da<span>Ju</span></div>
+      <nav>
+        <a href="#seccion1">Lorem</a>
+        <a href="#seccion2">Ipsum</a>
+        <a href="#seccion3">Dolor</a>
+        <a href="#">Sit amet</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <small>Lorem ipsum dolor sit</small>
+        <h1>Lorem ipsum dolor sit amet, consectetur adipiscing elit</h1>
+        <p>Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        <div class="botones">
+          <button class="boton">Praesent commodo</button>
+          <button class="boton borde">Duis aute irure</button>
+        </div>
+      </section>
+
+      <h2 class="seccion-titulo" id="seccion1">Lorem ipsum section</h2>
+      <p class="seccion-sub">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Lorem ipsum</h3>
+          <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        </div>
+        <div class="card">
+          <h3>Dolor sit amet</h3>
+          <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores.</p>
+        </div>
+        <div class="card">
+          <h3>Consectetur elit</h3>
+          <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque.</p>
+        </div>
+      </div>
+
+      <h2 class="seccion-titulo" id="seccion2">Ipsum dolor section</h2>
+      <p class="seccion-sub">Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Sed ut perspiciatis</h3>
+          <p>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora.</p>
+        </div>
+        <div class="card">
+          <h3>Nemo enim ipsam</h3>
+          <p>Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur.</p>
+        </div>
+        <div class="card">
+          <h3>Ut enim ad minima</h3>
+          <p>Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur.</p>
+        </div>
+        <div class="card">
+          <h3>At vero eos</h3>
+          <p>Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi.</p>
+        </div>
+      </div>
+
+      <h2 class="seccion-titulo" id="seccion3">Dolor section</h2>
+      <p class="seccion-sub">Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Lorem ipsum</h3>
+          <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+        </div>
+        <div class="card">
+          <h3>Dolor sit amet</h3>
+          <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Selector de ambiente -->
+  <div class="selector" role="group" aria-label="Ambiente festivo">
+    <button data-tema="navidad" aria-pressed="true">❄️ Navidad</button>
+    <button data-tema="halloween" aria-pressed="false">🕷️ Halloween</button>
+    <button data-tema="aniversario" aria-pressed="false">🎆 Aniversario</button>
+    <button data-tema="ninguno" aria-pressed="false">🚫 Ninguno</button>
+  </div>
+
+  <script>
+    // Tips de rendimiento y accesibilidad
+    const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const body = document.body;
+
+    /* ---------- 1) NIEVE — tsparticles ---------- */
+    let nieveActiva = false;
+    async function encenderNieve() {
+      // Detener instancia anterior si existe
+      if (document.querySelector("#particles canvas")) {
+        await window.tsParticles.domItem(0).destroy();
+        document.querySelector("#particles").innerHTML = "";
+      }
+      nieveActiva = true;
+      await window.tsParticles.load("particles", {
+        fullScreen: { enable: false },
+        fpsLimit: 60,
+        interaction: { modes: {} },
+        particles: {
+          number: { value: 60 },
+          color: { value: ["#ffffff", "#dbe7f3", "#c9d8ea", "#f3f6fa"] },
+          shape: { type: "circle" },
+          opacity: {
+            value: { min: 0.25, max: 0.85 },
+            animation: { enable: true, speed: 0.4, sync: false }
+          },
+          size: { value: { min: 1.2, max: 4 } },
+          move: {
+            enable: true,
+            direction: "bottom",
+            speed: { min: 0.6, max: 1.8 },
+            straight: false,
+            random: true,
+            drift: { min: -0.6, max: 0.6 },
+            outModes: { default: "out" }
+          }
+        },
+        detectRetina: true
+      });
+      // Fondo transparente (el gradiente lo pone la página)
+      document.querySelector("#particles").style.background = "transparent";
+      console.info("[demo] nieve encendida");
+    }
+    function apagarNieve() {
+      nieveActiva = false;
+      window.tsParticles.domItem(0)?.destroy();
+      document.querySelector("#particles").innerHTML = "";
+    }
+
+    /* ---------- 2) ARAÑA quieta + MURCIÉLAGO con vuelo aleatorio — anime.js ---------- */
+    let batTimers = [];
+    let batAnim = null;
+
+    function detenerMurcielago() {
+      batTimers.forEach(clearTimeout);
+      batTimers = [];
+      batAnim?.pause();
+      batAnim = null;
+      const bat = document.querySelector(".murcielago");
+      bat.style.opacity = "0";
+      bat.style.transform = "";
+    }
+
+    function volarMurcielago() {
+      const bat = document.querySelector(".murcielago");
+      const dir = Math.random() < 0.5 ? 1 : -1;           // 1: izquierda→derecha, -1: derecha→izquierda
+      const top = 6 + Math.random() * 30;                  // altura en % del viewport (variable)
+      const dur = 14000 + Math.random() * 12000;           // duración del vuelo (variable)
+      const drift = Math.random() * 60 - 30;               // derivación vertical (variable)
+
+      bat.style.top = top + "%";
+      bat.classList.toggle("flip", dir === -1);
+
+      batAnim = anime({
+        targets: bat,
+        translateX: dir === 1 ? ["-14vw", "112vw"] : ["112vw", "-14vw"],
+        translateY: [0, drift],
+        opacity: [
+          { value: 0, duration: 0 },
+          { value: 1, duration: 1500 },
+          { value: 1, duration: dur - 3000 },
+          { value: 0, duration: 1500 }
+        ],
+        duration: dur,
+        easing: "easeInOutSine",
+        complete: () => {
+          batTimers.push(setTimeout(volarMurcielago, 3500 + Math.random() * 6500));
+        }
+      });
+    }
+
+    function encenderArana() {
+      // La araña se queda quieta en su telaraña; lo único que se mueve es el murciélago
+      detenerMurcielago();
+      volarMurcielago();
+    }
+    function apagarArana() {
+      detenerMurcielago();
+    }
+
+    /* ---------- 3) FUEGOS — canvas-confetti ---------- */
+    let temporizadorFuegos = null;
+    function encenderFuegos() {
+      const colores = ["#f6b10e", "#ff7a50", "#7dd3fc", "#f9f871", "#ffffff"];
+      const disparar = () => {
+        confetti({
+          particleCount: 70,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0.12, y: 0.72 },
+          colors: colores,
+          zIndex: 0,
+          disableForReducedMotion: true,
+          ticks: 170
+        });
+        confetti({
+          particleCount: 70,
+          angle: 120,
+          spread: 55,
+          origin: { x: 0.88, y: 0.72 },
+          colors: colores,
+          zIndex: 0,
+          disableForReducedMotion: true,
+          ticks: 170
+        });
+        confetti({
+          particleCount: 90,
+          spread: 100,
+          startVelocity: 38,
+          scalar: 0.9,
+          origin: { x: 0.5, y: 0.9 },
+          colors: colores,
+          zIndex: 0,
+          disableForReducedMotion: true,
+          ticks: 170
+        });
+      };
+      temporizadorFuegos = setInterval(disparar, 3500);
+      console.info("[demo] fuegos encendidos (ráfaga cada 3.5s)");
+    }
+    function apagarFuegos() {
+      clearInterval(temporizadorFuegos);
+      temporizadorFuegos = null;
+      confetti.reset();
+    }
+
+    /* ---------- Selector ---------- */
+    const botones = document.querySelectorAll(".selector button");
+    function activar(tema) {
+      body.dataset.tema = tema;
+      botones.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tema === tema)));
+
+      // Detener todo
+      apagarNieve();
+      apagarArana();
+      apagarFuegos();
+
+      // Encender lo que corresponda (un solo ambiente a la vez)
+      if (reducido) {
+        console.warn("[demo] prefers-reduced-motion activo: las animaciones se omiten");
+      } else if (tema === "navidad") encenderNieve();
+      else if (tema === "halloween") encenderArana();
+      else if (tema === "aniversario") encenderFuegos();
+    }
+
+    botones.forEach((b) =>
+      b.addEventListener("click", () => activar(b.dataset.tema))
+    );
+
+    // Pausar fuegos/nieve cuando la pestaña está oculta (batería)
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        apagarFuegos();
+      } else {
+        const tema = body.dataset.tema;
+        if (!reducido && tema === "aniversario") encenderFuegos();
+      }
+    });
+
+    // Inicio: Navidad activa por defecto
+    activar("navidad");
+  </script>
+</body>
+</html>

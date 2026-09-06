@@ -1,0 +1,15 @@
+{
+  "rootDirectory": "frontend",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://mainplataform-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/api-docs/:path*",
+      "destination": "https://mainplataform-api.onrender.com/api-docs/:path*"
+    }
+  ]
+}

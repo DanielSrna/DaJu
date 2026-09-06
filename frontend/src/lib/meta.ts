@@ -74,6 +74,16 @@ const METAS_EXACTAS: Record<string, MetaPagina> = {
     descripcion:
       "Briefing guiado, seguimiento por etapas, fecha de entrega fija y soporte con garantía después de la compra.",
   },
+  "/terminos": {
+    titulo: "Términos y condiciones — DaJu",
+    descripcion:
+      "Condiciones de compra, postventa y garantía de ajuste de los servicios de DaJu.",
+  },
+  "/privacidad": {
+    titulo: "Política de privacidad — DaJu",
+    descripcion:
+      "Qué datos tratamos, para qué los usamos y los derechos que tienes como cliente.",
+  },
 };
 
 export function metaDeRuta(pathname: string): MetaPagina {
