@@ -53,6 +53,48 @@ export class CmsController {
     }
   }
 
+  async obtenerEditor(
+    _req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("CmsController.obtenerEditor");
+    try {
+      const cms = await cmsService.obtenerEditor();
+      res.status(200).json(cms);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async actualizarEditor(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("CmsController.actualizarEditor");
+    try {
+      const cms = await cmsService.actualizarEditor(req.body);
+      res.status(200).json(cms);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async publicarEditor(
+    _req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("CmsController.publicarEditor");
+    try {
+      const cms = await cmsService.publicarEditor();
+      res.status(200).json(cms);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async actualizarMarquesina(
     req: Request,
     res: Response,

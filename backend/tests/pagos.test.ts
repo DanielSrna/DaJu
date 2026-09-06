@@ -63,7 +63,7 @@ describe("Pagos API (checkout + webhook + onboarding)", () => {
     it("crea un pago pendiente y devuelve urlPago", async () => {
       const res = await request(app)
         .post("/api/v1/checkout")
-        .send({ paqueteId, email: "comprador@correo.com" });
+        .send({ paqueteId, email: "comprador@correo.com", nombre: "Comprador", password: "Clave123" });
 
       expect(res.status).toBe(201);
       expect(res.body.pago).toMatchObject({
@@ -118,7 +118,7 @@ describe("Pagos API (checkout + webhook + onboarding)", () => {
     it("responde ok si la firma es válida y el pago existe", async () => {
       const checkout = await request(app)
         .post("/api/v1/checkout")
-        .send({ paqueteId, email: "comprador@correo.com" });
+        .send({ paqueteId, email: "comprador@correo.com", nombre: "Comprador", password: "Clave123" });
       const pagoId = checkout.body.pago.id;
       const pago = await PagoModel.findById(pagoId);
       pago!.referencia = "ref-8001";

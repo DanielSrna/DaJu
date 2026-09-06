@@ -102,8 +102,8 @@ describe("Notificaciones (gatillo por estados)", () => {
     });
   });
 
-  describe("PagoService — onboarding envía credenciales + confirmación", () => {
-    it("envía credenciales y compra confirmada cuando el cliente es nuevo", async () => {
+  describe("PagoService — onboarding con cuenta creada en el checkout", () => {
+    it("envía la confirmación de compra cuando el cliente se registra en el checkout", async () => {
       const fakeEmail = new FakeEmailProvider();
       const fakePagos = new FakePaymentProvider();
       const servicio = new PagoService(fakePagos, new NotificacionesService(fakeEmail));
@@ -123,6 +123,8 @@ describe("Notificaciones (gatillo por estados)", () => {
       const { pago } = await servicio.crearCheckout({
         paqueteId: String(paquete._id),
         email: "nuevo-comprador@correo.com",
+        nombre: "Nuevo Comprador",
+        password: "Clave123",
       });
       const pagoDoc = await PagoModel.findById(pago.id);
       pagoDoc!.referencia = "fake-ref-1";
@@ -130,10 +132,11 @@ describe("Notificaciones (gatillo por estados)", () => {
 
       await servicio.procesarWebhook(webhookFirmado("fake-ref-1"));
 
-      expect(fakeEmail.enviados.length).toBeGreaterThanOrEqual(2);
       const asuntos = fakeEmail.enviados.map((e) => e.subject);
-      expect(asuntos.some((s) => s.toLowerCase().includes("credenciales"))).toBe(true);
       expect(asuntos.some((s) => s.toLowerCase().includes("confirmado"))).toBe(true);
+      // La cuenta se creó en el checkout con la contraseña del usuario:
+      // no se envían credenciales temporales en el onboarding.
+      expect(asuntos.some((s) => s.toLowerCase().includes("credenciales"))).toBe(false);
     });
 
     it("NO envía credenciales si el cliente ya existía (solo confirmación)", async () => {
@@ -163,6 +166,7 @@ describe("Notificaciones (gatillo por estados)", () => {
       const { pago } = await servicio.crearCheckout({
         paqueteId: String(paquete._id),
         email: "ya-registrado@correo.com",
+        password: "Clave123",
       });
       const pagoDoc = await PagoModel.findById(pago.id);
       pagoDoc!.referencia = "fake-ref-1";

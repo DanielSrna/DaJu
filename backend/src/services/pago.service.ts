@@ -3,12 +3,14 @@ import bcrypt from "bcryptjs";
 import { PagoModel, Pago } from "../models/pago.model";
 import { PaqueteModel } from "../models/paquete.model";
 import { UserModel } from "../models/user.model";
+import { CmsConfigModel } from "../models/cms-config.model";
 import {
   PaymentProvider,
   PaymentResult,
 } from "../adapters/payment/payment-provider.interface";
 import { createPaymentProvider } from "../adapters/payment/payment-provider.factory";
-import { proyectoService } from "./proyecto.service";
+import { proyectoService, CompraPago } from "./proyecto.service";
+import { funcionalidadExtraService } from "./funcionalidad-extra.service";
 import {
   NotificacionesService,
   notificacionesService,
@@ -25,10 +27,32 @@ interface PagoJson {
   emailCliente: string;
   estado: Pago["estado"];
   referencia: string | null;
+  funcionalidades: Array<{
+    id: string;
+    nombre: string;
+    categoria: string;
+    complejidad: string;
+    precio: number;
+  }>;
+  negociarDespues: boolean;
   createdAt: Date;
 }
 
+interface FuncionalidadSnapshot {
+  id: string;
+  nombre: string;
+  categoria: string;
+  complejidad: string;
+  precio: number;
+}
+
+const MAX_FUNCIONALIDADES = 10;
+
 function toJson(pago: Pago & { _id: unknown }): PagoJson {
+  const metadata = (pago.metadata ?? {}) as {
+    funcionalidades?: FuncionalidadSnapshot[];
+    negociarDespues?: boolean;
+  };
   return {
     id: String(pago._id),
     paqueteSlug: pago.paqueteSlug,
@@ -38,6 +62,8 @@ function toJson(pago: Pago & { _id: unknown }): PagoJson {
     emailCliente: pago.emailCliente,
     estado: pago.estado,
     referencia: pago.referencia ?? null,
+    funcionalidades: metadata.funcionalidades ?? [],
+    negociarDespues: metadata.negociarDespues ?? false,
     createdAt: pago.createdAt,
   };
 }
@@ -51,7 +77,10 @@ export class PagoService {
   async crearCheckout(data: {
     paqueteId: string;
     email: string;
-    clienteId?: string;
+    nombre?: string;
+    password?: string;
+    funcionalidades?: string[];
+    negociarDespues?: boolean;
   }): Promise<{ urlPago: string | null; pago: PagoJson }> {
     logger.proceso("PagoService.crearCheckout", { paqueteId: data.paqueteId });
 
@@ -64,21 +93,65 @@ export class PagoService {
     }
 
     const email = data.email.trim().toLowerCase();
+
+    // Descuento global anunciado en la vitrina: solo aplica si la marquesina
+    // está activa y hay un descuento vigente (regla del dueño: sin anuncio,
+    // no hay descuento). Aplica únicamente al paquete base.
+    const configCms = await CmsConfigModel.findOne({}).lean();
+    let factorDescuento = 1;
+    if (
+      configCms?.marquesina?.activo &&
+      configCms?.descuento?.activo &&
+      [20, 40, 70].includes(configCms.descuento.porcentaje)
+    ) {
+      factorDescuento = 1 - configCms.descuento.porcentaje / 100;
+    }
+
+    // Resolver funcionalidades adicionales (sin duplicados, solo activas, máx 10).
+    const idsFuncionalidades = [...new Set(data.funcionalidades ?? [])];
+    if (idsFuncionalidades.length > MAX_FUNCIONALIDADES) {
+      throw ApiError.validation(
+        `Máximo ${MAX_FUNCIONALIDADES} funcionalidades adicionales por paquete`,
+      );
+    }
+    const funcionalidades = idsFuncionalidades.length
+      ? await funcionalidadExtraService.resolverActivas(idsFuncionalidades)
+      : [];
+
+    // Registrar/validar la cuenta del comprador antes de pagar.
+    const datosCuenta: { email: string; nombre?: string; password?: string } = {
+      email,
+    };
+    if (data.nombre !== undefined) datosCuenta.nombre = data.nombre;
+    if (data.password !== undefined) datosCuenta.password = data.password;
+    const clienteId = await this.resolverOCrearCliente(datosCuenta);
+
+    const montoTotal =
+      Math.floor(paquete.precio * factorDescuento) +
+      funcionalidades.reduce((suma, f) => suma + f.precio, 0);
+    const descripcion = funcionalidades.length
+      ? `${paquete.nombre} + ${funcionalidades.length} funcionalidad(es) extra`
+      : `${paquete.nombre} (${paquete.slug})`;
+
     const pago = await PagoModel.create({
       paqueteId: paquete._id,
       paqueteSlug: paquete.slug,
-      descripcion: `${paquete.nombre} (${paquete.slug})`,
-      monto: paquete.precio,
+      descripcion,
+      monto: montoTotal,
       moneda: paquete.moneda ?? "USD",
       emailCliente: email,
-      clienteId: data.clienteId ?? null,
+      clienteId,
       estado: "pending",
+      metadata: {
+        funcionalidades,
+        negociarDespues: data.negociarDespues ?? false,
+      },
     });
 
     const resultado: PaymentResult = await this.provider.createCheckout({
-      amount: paquete.precio,
+      amount: montoTotal,
       currency: paquete.moneda ?? "USD",
-      description: `${paquete.nombre} (${paquete.slug})`,
+      description: descripcion,
       clientEmail: email,
       metadata: {
         paqueteSlug: paquete.slug,
@@ -94,9 +167,68 @@ export class PagoService {
     logger.exito("PagoService.crearCheckout completado", {
       pagoId: String(pago._id),
       urlPago: resultado.checkoutUrl ? "generada" : null,
+      montoTotal,
+      funcionalidades: funcionalidades.length,
     });
 
     return { urlPago: resultado.checkoutUrl, pago: toJson(pago.toObject()) };
+  }
+
+  /**
+   * Si el email no existe: crea la cuenta (rol cliente, activo).
+   * Si existe: valida la contraseña. Las cuentas admin no pueden comprar.
+   */
+  private async resolverOCrearCliente(data: {
+    email: string;
+    nombre?: string;
+    password?: string;
+  }): Promise<string> {
+    const existente = await UserModel.findOne({ email: data.email }).select(
+      "+passwordHash",
+    );
+    if (existente) {
+      if (existente.rol !== "cliente") {
+        throw ApiError.validation(
+          "Las cuentas de administrador no pueden comprar",
+        );
+      }
+      if (
+        !data.password ||
+        !bcrypt.compareSync(data.password, existente.passwordHash)
+      ) {
+        logger.fracaso(
+          "PagoService.resolverOCrearCliente: contraseña incorrecta",
+          {
+            email: data.email,
+          },
+        );
+        throw ApiError.unauthorized(
+          "Ya existe una cuenta con este email. Inicia sesión con tu contraseña.",
+        );
+      }
+      return String(existente._id);
+    }
+
+    if (!data.nombre || !data.password) {
+      throw ApiError.validation(
+        "Nombre y contraseña son obligatorios para crear tu cuenta",
+      );
+    }
+    const doc = await UserModel.create({
+      email: data.email,
+      passwordHash: bcrypt.hashSync(data.password, 12),
+      nombre: data.nombre.trim(),
+      rol: "cliente",
+      activo: true,
+    });
+    logger.exito(
+      "PagoService.resolverOCrearCliente: cuenta creada en el checkout",
+      {
+        email: data.email,
+        userId: String(doc._id),
+      },
+    );
+    return String(doc._id);
   }
 
   /**
@@ -158,6 +290,7 @@ export class PagoService {
     emailCliente: string;
     paqueteId: unknown;
     paqueteSlug: string;
+    metadata?: unknown;
   }) {
     logger.proceso("PagoService.ejecutarOnboarding", {
       pagoId: String(pago._id),
@@ -174,12 +307,16 @@ export class PagoService {
       await PagoModel.updateOne({ _id: pago._id }, { $set: { clienteId } });
     }
 
+    const datosPago = {
+      _id: pago._id,
+      paqueteId: pago.paqueteId,
+      paqueteSlug: pago.paqueteSlug,
+      ...(pago.metadata
+        ? { metadata: pago.metadata as CompraPago["metadata"] }
+        : {}),
+    } as CompraPago;
     const proyecto = await proyectoService.crearDesdeCompra(
-      {
-        _id: pago._id,
-        paqueteId: pago.paqueteId,
-        paqueteSlug: pago.paqueteSlug,
-      },
+      datosPago,
       clienteId,
     );
 

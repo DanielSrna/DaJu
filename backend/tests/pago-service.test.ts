@@ -3,7 +3,9 @@ import { PaqueteModel } from "../src/models/paquete.model";
 import { PagoModel } from "../src/models/pago.model";
 import { UserModel } from "../src/models/user.model";
 import { ProyectoModel } from "../src/models/proyecto.model";
+import { CmsConfigModel } from "../src/models/cms-config.model";
 import { PaymentProvider, PaymentResult } from "../src/adapters/payment/payment-provider.interface";
+import bcrypt from "bcryptjs";
 
 class FakePaymentProvider implements PaymentProvider {
   private estadoWebhook: PaymentResult["status"] = "paid";
@@ -49,6 +51,49 @@ describe("PagoService (flujo completo con proveedor simulado)", () => {
     await PaqueteModel.deleteMany({});
   });
 
+  it("aplica el descuento global si la marquesina está activa y el CMS lo anuncia", async () => {
+    const paquete = await PaqueteModel.create({
+      nombre: "Validor",
+      slug: "validor",
+      tipo: "validor",
+      descripcion: "Landing de una vista",
+      precio: 199,
+      moneda: "USD",
+      vistasIncluidas: 1,
+      soporteMeses: 2,
+      diasEntrega: 10,
+    });
+    await CmsConfigModel.deleteMany({});
+    await CmsConfigModel.create({
+      colores: { primario: "#123456", secundario: "#ffffff", acento: "#abcdef" },
+      marquesina: { texto: "40% off", activo: true },
+      descuento: { activo: true, porcentaje: 40, mensaje: "40% off", hasta: null },
+      diasExtra: 0,
+    });
+
+    const resultado = await service.crearCheckout({
+      paqueteId: String(paquete._id),
+      email: "descuento@correo.com",
+      nombre: "Con Dto",
+      password: "Clave123",
+    });
+
+    // 199 × 0.6 = 119.4 → floor 119
+    expect(resultado.pago.monto).toBe(119);
+
+    // Sin anuncio (marquesina apagada) no hay descuento
+    await CmsConfigModel.updateOne({}, { $set: { "marquesina.activo": false } });
+    const sinAnuncio = await service.crearCheckout({
+      paqueteId: String(paquete._id),
+      email: "sinanuncio@correo.com",
+      nombre: "Sin Dto",
+      password: "Clave123",
+    });
+    expect(sinAnuncio.pago.monto).toBe(199);
+
+    await CmsConfigModel.deleteMany({});
+  });
+
   it("crea un pago pendiente con URL de pago", async () => {
     const paquete = await PaqueteModel.create({
       nombre: "Validor",
@@ -65,6 +110,8 @@ describe("PagoService (flujo completo con proveedor simulado)", () => {
     const resultado = await service.crearCheckout({
       paqueteId: String(paquete._id),
       email: "nuevo@correo.com",
+      nombre: "Nuevo",
+      password: "Clave123",
     });
 
     expect(resultado.urlPago).toBe("https://checkout.epayco.test/pagar");
@@ -88,6 +135,8 @@ describe("PagoService (flujo completo con proveedor simulado)", () => {
     const { pago } = await service.crearCheckout({
       paqueteId: String(paquete._id),
       email: "empresa@correo.com",
+      nombre: "Empresa",
+      password: "Clave123",
     });
     const pagoDoc = await PagoModel.findById(pago.id);
     pagoDoc!.referencia = "fake-ref-1";
@@ -130,6 +179,8 @@ describe("PagoService (flujo completo con proveedor simulado)", () => {
     const { pago } = await service.crearCheckout({
       paqueteId: String(paquete._id),
       email: "idempotente@correo.com",
+      nombre: "Idem",
+      password: "Clave123",
     });
     const pagoDoc = await PagoModel.findById(pago.id);
     pagoDoc!.referencia = "fake-ref-1";
@@ -159,6 +210,8 @@ describe("PagoService (flujo completo con proveedor simulado)", () => {
     const { pago } = await service.crearCheckout({
       paqueteId: String(paquete._id),
       email: "rechazado@correo.com",
+      nombre: "Rechazado",
+      password: "Clave123",
     });
     const pagoDoc = await PagoModel.findById(pago.id);
     pagoDoc!.referencia = "fake-ref-1";
@@ -178,7 +231,7 @@ describe("PagoService (flujo completo con proveedor simulado)", () => {
   it("cliente ya registrado se vincula sin duplicarlo", async () => {
     await UserModel.create({
       email: "ya-registrado@correo.com",
-      passwordHash: "hash-existente",
+      passwordHash: bcrypt.hashSync("Clave123", 12),
       nombre: "Cliente Existente",
       rol: "cliente",
     });
@@ -198,6 +251,7 @@ describe("PagoService (flujo completo con proveedor simulado)", () => {
     const { pago } = await service.crearCheckout({
       paqueteId: String(paquete._id),
       email: "ya-registrado@correo.com",
+      password: "Clave123",
     });
     const pagoDoc = await PagoModel.findById(pago.id);
     pagoDoc!.referencia = "fake-ref-1";

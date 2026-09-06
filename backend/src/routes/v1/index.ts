@@ -7,6 +7,9 @@ import proyectoRoutes from "./proyecto.routes";
 import briefingRoutes from "./briefing.routes";
 import contactoRoutes from "./contacto.routes";
 import cmsRoutes from "./cms.routes";
+import funcionalidadRoutes from "./funcionalidad-extra.routes";
+import ofertaRoutes from "./oferta.routes";
+import publicacionRoutes from "./publicacion.routes";
 
 const router = Router();
 
@@ -18,5 +21,8 @@ router.use(proyectoRoutes);
 router.use(briefingRoutes);
 router.use(contactoRoutes);
 router.use(cmsRoutes);
+router.use(funcionalidadRoutes);
+router.use(ofertaRoutes);
+router.use(publicacionRoutes);
 
 export default router;

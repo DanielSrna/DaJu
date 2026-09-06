@@ -22,10 +22,18 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [paqueteId, email]
+ *             required: [paqueteId, nombre, email, password]
  *             properties:
  *               paqueteId: { type: string, example: "66e0a1b2c3d4e5f6a7b8c9d0" }
+ *               nombre: { type: string, example: "Cliente Nuevo" }
  *               email: { type: string, format: email, example: "cliente@correo.com" }
+ *               password: { type: string, format: password, example: "Cliente123" }
+ *               funcionalidades:
+ *                 type: array
+ *                 items: { type: string }
+ *               negociarDespues:
+ *                 type: boolean
+ *                 description: Marca funcionalidades no listadas para negociar después
  *     responses:
  *       201:
  *         description: Checkout creado
@@ -45,6 +53,22 @@ router.post(
   "/checkout",
   body("paqueteId").isMongoId().withMessage("paqueteId inválido"),
   body("email").isEmail().withMessage("Email inválido").trim().toLowerCase(),
+  body("nombre").optional().isString().isLength({ min: 2, max: 80 }).trim(),
+  body("password")
+    .optional()
+    .isString()
+    .isLength({ min: 8, max: 72 })
+    .matches(/^(?=.*[a-zA-Z])(?=.*\d)/)
+    .withMessage("La contraseña debe tener letras y números (mínimo 8)"),
+  body("funcionalidades")
+    .optional()
+    .isArray({ max: 10 })
+    .withMessage("Máximo 10 funcionalidades"),
+  body("funcionalidades.*")
+    .optional()
+    .isMongoId()
+    .withMessage("Id de funcionalidad inválido"),
+  body("negociarDespues").optional().isBoolean(),
   validate,
   pagoController.crearCheckout.bind(pagoController),
 );

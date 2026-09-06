@@ -44,6 +44,18 @@ const proyectoSchema = new Schema(
       default: null,
       comment: "Inicia la garantía (soporte)",
     },
+    funcionalidades: {
+      type: [
+        {
+          id: { type: String },
+          nombre: { type: String },
+          complejidad: { type: String, enum: ["facil", "media", "dificil"] },
+          precio: { type: Number },
+        },
+      ],
+      default: [],
+      comment: "Snapshot de funcionalidades adicionales compradas",
+    },
   },
   {
     timestamps: true,

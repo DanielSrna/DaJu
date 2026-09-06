@@ -16,6 +16,14 @@ export interface CompraPago {
   _id: unknown;
   paqueteId: unknown;
   paqueteSlug: string;
+  metadata?: {
+    funcionalidades?: Array<{
+      id: string;
+      nombre: string;
+      complejidad: string;
+      precio: number;
+    }>;
+  };
 }
 
 const SIGUIENTE_ESTADO: Record<string, string> = {
@@ -40,6 +48,12 @@ interface ProyectoJson {
   fechaCompra: Date;
   fechaEntrega: Date;
   fechaEntregado: Date | null;
+  funcionalidades: Array<{
+    id: string;
+    nombre: string;
+    complejidad: string;
+    precio: number;
+  }>;
   createdAt: Date;
 }
 
@@ -91,6 +105,13 @@ export class ProyectoService {
     const fechaCompra = new Date();
     const fechaEntrega = addBusinessDays(fechaCompra, diasEfectivos);
 
+    const funcionalidades = (pago.metadata?.funcionalidades ?? []).map((f) => ({
+      id: f.id,
+      nombre: f.nombre,
+      complejidad: f.complejidad,
+      precio: f.precio,
+    }));
+
     const doc = await ProyectoModel.create({
       clienteId,
       pagoId: pago._id,
@@ -105,12 +126,14 @@ export class ProyectoService {
       estado: "recibido",
       fechaCompra,
       fechaEntrega,
+      funcionalidades,
     });
 
     logger.exito("ProyectoService.crearDesdeCompra completado", {
       proyectoId: String(doc._id),
       fechaEntrega: fechaEntrega.toISOString(),
       diasEfectivos,
+      funcionalidades: funcionalidades.length,
     });
     return doc.toObject() as unknown as Proyecto & { _id: unknown };
   }
@@ -375,6 +398,8 @@ function toJson(doc: Record<string, unknown>): ProyectoJson {
     fechaEntregado: doc.fechaEntregado
       ? new Date(doc.fechaEntregado as string)
       : null,
+    funcionalidades:
+      (doc.funcionalidades as ProyectoJson["funcionalidades"]) ?? [],
     createdAt: new Date(doc.createdAt as string),
   };
 }

@@ -162,4 +162,136 @@ router.delete(
   cmsController.eliminarCarruselItem.bind(cmsController),
 );
 
+const HEX_COLOR = /^#([0-9a-fA-F]{6})$/;
+
+/**
+ * @swagger
+ * /cms/editor:
+ *   get:
+ *     summary: Configuración del editor (admin) — publicado + borrador
+ *     tags: [CMS]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Configuración publicada y borrador pendiente
+ */
+router.get(
+  "/cms/editor",
+  authMiddleware,
+  requireRol("admin"),
+  cmsController.obtenerEditor.bind(cmsController),
+);
+
+/**
+ * @swagger
+ * /cms/editor:
+ *   patch:
+ *     summary: Guardar cambios en el borrador (no afecta a la vitrina)
+ *     tags: [CMS]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               colores:
+ *                 type: object
+ *                 properties:
+ *                   primario:
+ *                     type: string
+ *                     pattern: '^#([0-9a-fA-F]{6})$'
+ *                   secundario:
+ *                     type: string
+ *                     pattern: '^#([0-9a-fA-F]{6})$'
+ *                   acento:
+ *                     type: string
+ *                     pattern: '^#([0-9a-fA-F]{6})$'
+ *               marquesina:
+ *                 type: object
+ *                 properties:
+ *                   texto:
+ *                     type: string
+ *                     maxLength: 300
+ *                   activo:
+ *                     type: boolean
+ *               textos:
+ *                 type: object
+ *                 additionalProperties:
+ *                   type: string
+ *                   maxLength: 5000
+ *               descuento:
+ *                 type: object
+ *                 properties:
+ *                   activo:
+ *                     type: boolean
+ *                   porcentaje:
+ *                     type: number
+ *                     enum: [20, 40, 70]
+ *                   mensaje:
+ *                     type: string
+ *                     maxLength: 200
+ *                   hasta:
+ *                     type: string
+ *                     nullable: true
+ *               diasExtra:
+ *                 type: number
+ *                 minimum: 0
+ *     responses:
+ *       200:
+ *         description: Borrador actualizado
+ *       400:
+ *         description: Validación fallida
+ */
+router.patch(
+  "/cms/editor",
+  authMiddleware,
+  requireRol("admin"),
+  body("colores").optional().isObject(),
+  body("colores.primario").optional().matches(HEX_COLOR),
+  body("colores.secundario").optional().matches(HEX_COLOR),
+  body("colores.acento").optional().matches(HEX_COLOR),
+  body("marquesina").optional().isObject(),
+  body("marquesina.texto").optional().isString().trim().isLength({ max: 300 }),
+  body("marquesina.activo").optional().isBoolean(),
+  body("textos").optional().isObject(),
+  body("textos.*").optional().isString().trim().isLength({ max: 5000 }),
+  body("descuento").optional().isObject(),
+  body("descuento.activo").optional().isBoolean(),
+  body("descuento.porcentaje").optional().isIn([20, 40, 70]),
+  body("descuento.mensaje").optional().isString().trim().isLength({ max: 200 }),
+  body("descuento.hasta")
+    .optional({ values: "null" })
+    .isISO8601()
+    .withMessage("La fecha de vigencia debe ser ISO válida"),
+  body("diasExtra")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("No puede ser negativo"),
+  validate,
+  cmsController.actualizarEditor.bind(cmsController),
+);
+
+/**
+ * @swagger
+ * /cms/publicar:
+ *   post:
+ *     summary: Aplicar el borrador a la vitrina pública
+ *     tags: [CMS]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Cambios publicados
+ */
+router.post(
+  "/cms/publicar",
+  authMiddleware,
+  requireRol("admin"),
+  cmsController.publicarEditor.bind(cmsController),
+);
+
 export default router;

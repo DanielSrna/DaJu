@@ -26,6 +26,14 @@ const options: swaggerJsdoc.Options = {
         name: "CMS",
         description: "Micro-CMS: logo, colores, marquesina y carrusel",
       },
+      {
+        name: "Funcionalidades",
+        description: "Catálogo de funcionalidades adicionales del checkout",
+      },
+      {
+        name: "Blog",
+        description: "Publicaciones: noticias y conceptos de la agencia",
+      },
     ],
     components: {
       securitySchemes: {
@@ -145,6 +153,16 @@ const options: swaggerJsdoc.Options = {
               enum: ["pending", "paid", "failed", "refunded"],
             },
             referencia: { type: "string", nullable: true },
+            funcionalidades: {
+              type: "array",
+              items: { type: "string" },
+              description: "IDs de funcionalidades extra",
+            },
+            negociarDespues: {
+              type: "boolean",
+              description:
+                "El cliente pidió negociar funcionalidades no listadas",
+            },
             createdAt: { type: "string", format: "date-time" },
           },
         },
@@ -173,6 +191,55 @@ const options: swaggerJsdoc.Options = {
             },
             fechaCompra: { type: "string", format: "date-time" },
             fechaEntrega: { type: "string", format: "date-time" },
+          },
+        },
+        Publicacion: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            titulo: { type: "string", example: "¿Qué es una landing page?" },
+            slug: { type: "string", example: "que-es-una-landing-page" },
+            tipo: { type: "string", enum: ["concepto", "noticia"] },
+            resumen: { type: "string" },
+            contenido: { type: "string" },
+            secciones: {
+              type: "array",
+              items: {
+                type: "string",
+                enum: ["inicio", "productos", "faq", "postventa"],
+              },
+            },
+          },
+        },
+        PublicacionInput: {
+          type: "object",
+          required: ["titulo", "tipo", "resumen", "contenido"],
+          properties: {
+            titulo: { type: "string", example: "¿Qué es una landing page?" },
+            slug: { type: "string", example: "que-es-una-landing-page" },
+            tipo: { type: "string", enum: ["concepto", "noticia"] },
+            resumen: { type: "string" },
+            contenido: { type: "string" },
+            secciones: { type: "array", items: { type: "string" } },
+            publicado: { type: "boolean", default: false },
+          },
+        },
+        FuncionalidadExtra: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            nombre: { type: "string", example: "Chat de WhatsApp" },
+            descripcion: { type: "string" },
+            categoria: {
+              type: "string",
+              enum: ["integraciones", "pagina", "usuarios", "datos"],
+            },
+            complejidad: {
+              type: "string",
+              enum: ["facil", "media", "dificil"],
+            },
+            precio: { type: "number", example: 40 },
+            activo: { type: "boolean", example: true },
           },
         },
         Briefing: {

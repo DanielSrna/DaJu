@@ -10,14 +10,29 @@ export class PagoController {
   ): Promise<void> {
     logger.proceso("PagoController.crearCheckout");
     try {
-      const { paqueteId, email } = req.body;
-      const params: { paqueteId: string; email: string; clienteId?: string } = {
+      const {
         paqueteId,
         email,
-      };
-      if (req.user) {
-        params.clienteId = req.user.id;
-      }
+        nombre,
+        password,
+        funcionalidades,
+        negociarDespues,
+      } = req.body;
+      const params: {
+        paqueteId: string;
+        email: string;
+        nombre?: string;
+        password?: string;
+        funcionalidades?: string[];
+        negociarDespues?: boolean;
+      } = { paqueteId, email };
+      if (typeof nombre === "string") params.nombre = nombre;
+      if (typeof password === "string") params.password = password;
+      if (Array.isArray(funcionalidades))
+        params.funcionalidades = funcionalidades;
+      if (typeof negociarDespues === "boolean")
+        params.negociarDespues = negociarDespues;
+
       const resultado = await pagoService.crearCheckout(params);
       res.status(201).json(resultado);
     } catch (error) {

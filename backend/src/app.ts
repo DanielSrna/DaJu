@@ -31,6 +31,11 @@ export function createApp(): Express {
   logger.proceso("Registrando middleware y rutas");
   app.use(generalRateLimiter);
 
+  // Spec OpenAPI en JSON (lo consume el frontend para generar tipos con openapi-typescript)
+  app.get("/api-docs/spec.json", (_req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
+  });
   app.use(
     "/api-docs",
     swaggerUi.serve,

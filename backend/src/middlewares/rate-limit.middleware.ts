@@ -7,7 +7,9 @@ export function buildLimiter(opts: {
   limit: number;
   message: { error: { code: string; message: string } };
 }) {
-  if (process.env.NODE_ENV === "test") {
+  // En development los tests/verificaciones hacen muchas peticiones seguidas;
+  // el límite real se aplica en producción (NODE_ENV=production).
+  if (process.env.NODE_ENV !== "production") {
     return (_req: Request, _res: Response, next: NextFunction): void => next();
   }
   return rateLimit({
