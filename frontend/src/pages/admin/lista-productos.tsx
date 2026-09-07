@@ -53,6 +53,7 @@ export function ListaProductos() {
         slug: `${p.slug}-copia`,
         tipo: p.tipo,
         descripcion: p.descripcion,
+        garantia: p.garantia,
         precio: p.precio,
         moneda: p.moneda,
         vistasIncluidas: p.vistasIncluidas,

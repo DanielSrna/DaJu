@@ -521,7 +521,7 @@ export function Productos() {
                   </AccordionItem>
                 ))}
 
-                {plantillas.length > 0 && (
+                {plantillas && plantillas.length > 0 && (
                   <AccordionItem value="plantillas" className="border-b last:border-0">
                     <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
                       Plantillas listas para desplegar
@@ -529,27 +529,25 @@ export function Productos() {
                     <AccordionContent className="px-4 pb-5 sm:px-6">
                       <div className="grid gap-3 sm:grid-cols-2">
                         {plantillas.map((o) => (
-                          <div key={o.id} className="rounded-lg border p-3">
+                          <Link key={o.id} to={`/plantillas/${o.slug}`} className="block rounded-lg border p-3 transition-colors hover:border-[var(--brand-acento)]/60 hover:bg-[var(--brand-acento)]/5">
                             <p className="font-semibold">{o.nombre}</p>
                             <TextoEnriquecido html={o.descripcion} className="mt-1 text-sm text-muted-foreground" />
-                            {o.desde != null && (
-                              <p className="mt-2 text-sm font-bold text-[var(--brand-primario)]">
-                                Desde ${precioConDescuento(o.desde, cms.descuento.porcentaje).toLocaleString("es-CO")}
-                                {hayDescuento && (
-                                  <span className="ml-1 text-xs font-normal text-muted-foreground line-through opacity-55">
-                                    ${o.desde.toLocaleString("es-CO")}
-                                  </span>
-                                )}
-                              </p>
-                            )}
-                          </div>
+                            <p className="mt-2 text-sm font-bold text-[var(--brand-primario)]">
+                              Desde ${precioConDescuento(o.precio, cms.descuento.porcentaje).toLocaleString("es-CO")}
+                              {hayDescuento && (
+                                <span className="ml-1 text-xs font-normal text-muted-foreground line-through opacity-55">
+                                  ${o.precio.toLocaleString("es-CO")}
+                                </span>
+                              )}
+                            </p>
+                          </Link>
                         ))}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
                 )}
 
-                {servicios.length > 0 && (
+                {servicios && servicios.length > 0 && (
                   <AccordionItem value="servicios" className="border-b last:border-0">
                     <AccordionTrigger className="data-[state=open]:bg-[var(--brand-primario)] data-[state=open]:text-white hover:bg-[var(--brand-acento)]/10 hover:text-[var(--brand-primario)] data-[state=open]:hover:bg-[var(--brand-primario)] data-[state=open]:hover:text-white">
                       Consultoría por sesiones
@@ -557,11 +555,13 @@ export function Productos() {
                     <AccordionContent className="px-4 pb-5 sm:px-6">
                       <div className="grid gap-3 sm:grid-cols-2">
                         {servicios.map((o) => (
-                          <div key={o.id} className="rounded-lg border p-3">
+                          <Link key={o.id} to={`/servicios/${o.slug}`} className="block rounded-lg border p-3 transition-colors hover:border-[var(--brand-acento)]/60 hover:bg-[var(--brand-acento)]/5">
                             <p className="font-semibold">{o.nombre}</p>
                             <TextoEnriquecido html={o.descripcion} className="mt-1 text-sm text-muted-foreground" />
-                            {o.para && <p className="mt-2 text-xs text-muted-foreground">{o.para}</p>}
-                          </div>
+                            <p className="mt-2 text-sm font-bold text-[var(--brand-primario)]">
+                              ${o.precio.toLocaleString("es-CO")} USD / sesión
+                            </p>
+                          </Link>
                         ))}
                       </div>
                     </AccordionContent>

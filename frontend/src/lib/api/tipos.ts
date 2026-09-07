@@ -321,6 +321,35 @@ export interface BriefingV2 {
   proyectoId: string;
   contenido: BriefingV2Contenido;
   completado: boolean;
+  archivos?: Array<{
+    id: string;
+    url: string;
+    publicId: string;
+    nombre: string;
+    mimeType: string;
+    tamañoBytes: number;
+  }>;
+}
+
+export interface PagoItem {
+  id: string;
+  tipoProducto: "paquete" | "plantilla" | "servicio" | "funcionalidad";
+  productoSlug: string;
+  descripcion: string;
+  monto: number;
+  moneda: string;
+  estado: "pending" | "paid" | "failed" | "refunded";
+  referencia: string | null;
+  cantidad: number;
+  createdAt: string;
+}
+
+export interface GarantiaInfo {
+  activa: boolean;
+  soporteMeses: number;
+  fechaInicio: string;
+  fechaExpiracion: string;
+  diasRestantes: number;
 }
 
 /** Oferta de la vitrina: plantilla o consultoría (servicio). */
@@ -391,6 +420,7 @@ export interface Publicacion {
   resumen: string;
   contenido: string;
   secciones: Array<"inicio" | "productos" | "faq" | "postventa">;
+  publicado?: boolean;
 }
 
 /** Cuerpo para crear/actualizar una publicación (contrato API). */

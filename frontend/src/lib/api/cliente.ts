@@ -509,7 +509,7 @@ export const api = {
   actualizarVistaBriefing: (
     proyectoId: string,
     vistaId: string,
-    datos: { requisitos?: string; semaforo?: "pendiente" | "negociacion" | "aprobada"; nombre?: string },
+    datos: { requisitos?: string; semaforo?: "pendiente" | "negociacion" | "cotizacion" | "aprobada"; nombre?: string },
   ) =>
     peticion<{ briefing: BriefingV2 }>(
       `/briefing/${proyectoId}/vistas/${vistaId}`,

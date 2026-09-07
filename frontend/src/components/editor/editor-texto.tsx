@@ -35,7 +35,7 @@ export function sanitizarHtml(html: string): string {
       if (TAGS_PERMITIDAS.has(hijo.tagName.toUpperCase())) {
         // Style: solo se permite font-size
         if (hijo.hasAttribute("style")) {
-          const tamaño = hijo.style.fontSize;
+          const tamaño = (hijo as HTMLElement).style.fontSize;
           if (tamaño) hijo.setAttribute("style", `font-size: ${tamaño}`);
           else hijo.removeAttribute("style");
         }
@@ -66,9 +66,11 @@ export function sanitizarHtml(html: string): string {
 }
 
 interface EditorTextoProps {
-  value: string;
+  value?: string;
+  html?: string;
   onChange: (html: string) => void;
-  ariaLabel: string;
+  ariaLabel?: string;
+  textoAcuerdo?: string;
   rows?: number;
 }
 
@@ -77,7 +79,8 @@ interface EditorTextoProps {
  * títulos de dos niveles (H2/H3), negrita, cursiva y 3 tamaños de fuente.
  * Genera HTML simple que se sanitiza al leer.
  */
-export function EditorTexto({ value, onChange, ariaLabel, rows = 6 }: EditorTextoProps) {
+export function EditorTexto({ value, html, onChange, ariaLabel = "Contenido", rows = 6 }: EditorTextoProps) {
+  const contenido = html ?? value ?? "";
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -91,10 +94,10 @@ export function EditorTexto({ value, onChange, ariaLabel, rows = 6 }: EditorText
   // Sincroniza el contenido cuando el valor externo cambia (carga de datos).
   useEffect(() => {
     const el = ref.current;
-    if (el && el.innerHTML !== value && document.activeElement !== el) {
-      el.innerHTML = value;
+    if (el && el.innerHTML !== contenido && document.activeElement !== el) {
+      el.innerHTML = contenido;
     }
-  }, [value]);
+  }, [contenido]);
 
   const ejecutar = (comando: string, valor?: string): void => {
     ref.current?.focus();
@@ -159,7 +162,7 @@ export function EditorTexto({ value, onChange, ariaLabel, rows = 6 }: EditorText
           <Heading3 className="size-4" /> H3
         </Button>
         <span className="mx-1 h-5 w-px bg-border" />
-        <Type title="Tamaño" className="size-4 text-muted-foreground" aria-hidden="true" />
+        <Type className="size-4 text-muted-foreground" aria-hidden="true" />
         <Button
           type="button"
           variant="ghost"
