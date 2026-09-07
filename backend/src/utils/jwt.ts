@@ -49,7 +49,10 @@ export function cookieOptions(maxAgeMs: number) {
   return {
     httpOnly: true,
     secure: env.COOKIE_SECURE,
-    sameSite: "lax" as const,
+    // Cross-site (frontend Vercel + backend Render): COOKIE_SAME_SITE=none
+    sameSite:
+      (process.env.COOKIE_SAME_SITE as "lax" | "none" | "strict" | undefined) ??
+      "lax",
     path: "/",
     maxAge: maxAgeMs,
   };
