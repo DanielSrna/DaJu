@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { UserModel } from "../models/user.model";
 import { ApiError } from "../utils/ApiError";
@@ -142,6 +143,59 @@ export class AuthService {
     const user = toPublicUser(doc);
     logger.exito("AuthService.getMe completado", { userId });
     return user;
+  }
+
+  /** Genera token de restablecimiento (30 min) y envía el correo. */
+  async solicitarRestablecimiento(email: string): Promise<void> {
+    logger.proceso("AuthService.solicitarRestablecimiento", { email });
+    const usuario = await UserModel.findOne({ email: email.toLowerCase() });
+    if (!usuario) {
+      // No revelamos si la cuenta existe.
+      logger.exito(
+        "AuthService.solicitarRestablecimiento: sin cuenta (silencioso)",
+      );
+      return;
+    }
+    const token = randomBytes(24).toString("base64url");
+    usuario.passwordResetToken = token;
+    usuario.passwordResetExpires = new Date(Date.now() + 30 * 60 * 1000);
+    await usuario.save();
+
+    try {
+      const { notificacionesService } =
+        await import("./notificaciones.service");
+      await notificacionesService.enviarRestablecer({
+        email: usuario.email,
+        token,
+      });
+    } catch (error) {
+      logger.fracaso("AuthService.solicitarRestablecimiento: falló el correo", {
+        error: (error as Error).message,
+      });
+    }
+    logger.exito("AuthService.solicitarRestablecimiento completado");
+  }
+
+  /** Cambia la contraseña con el token (válido por 30 min). */
+  async restablecerContrasena(
+    token: string,
+    nuevaContrasena: string,
+  ): Promise<void> {
+    logger.proceso("AuthService.restablecerContrasena");
+    const usuario = await UserModel.findOne({
+      passwordResetToken: token,
+      passwordResetExpires: { $gt: new Date() },
+    }).select("+passwordResetToken +passwordResetExpires");
+    if (!usuario) {
+      throw ApiError.badRequest(
+        "El enlace no es válido o ya expiró (30 minutos)",
+      );
+    }
+    usuario.passwordHash = bcrypt.hashSync(nuevaContrasena, 12);
+    usuario.passwordResetToken = "";
+    usuario.passwordResetExpires = null;
+    await usuario.save();
+    logger.exito("AuthService.restablecerContrasena completado");
   }
 }
 

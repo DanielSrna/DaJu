@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Minus, Plus, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/cliente";
 import { useTema } from "@/lib/tema";
 import { descuentoAplicable, precioConDescuento } from "@/lib/cms";
-import type { FuncionalidadExtra, Paquete } from "@/lib/api/tipos";
+import type {
+  FuncionalidadExtra,
+  Plantilla,
+  Paquete,
+  Servicio,
+  TipoProducto,
+} from "@/lib/api/tipos";
 
 const COMPLEJIDAD_LABEL: Record<FuncionalidadExtra["complejidad"], string> = {
   facil: "Fácil",
@@ -20,29 +26,100 @@ const CATEGORIA_LABEL: Record<FuncionalidadExtra["categoria"], string> = {
   datos: "Automatización y datos",
 };
 
-export function Comprar() {
+const MAX_SESIONES = 10;
+
+interface ItemVitrina {
+  id: string;
+  nombre: string;
+  slug: string;
+  precio: number;
+  moneda: string;
+  descripcion: string;
+}
+
+interface Props {
+  tipo: TipoProducto;
+}
+
+const RUTAS: Record<TipoProducto, string> = {
+  paquete: "/productos",
+  plantilla: "/plantillas",
+  servicio: "/servicios",
+};
+
+async function cargarItem(
+  tipo: TipoProducto,
+  slug: string,
+): Promise<ItemVitrina> {
+  if (tipo === "plantilla") {
+    const r = await api.plantillaPorSlug(slug);
+    const p = r.plantilla as Plantilla;
+    return {
+      id: p.id,
+      nombre: p.nombre,
+      slug: p.slug,
+      precio: p.precio,
+      moneda: p.moneda,
+      descripcion: p.descripcion,
+    };
+  }
+  if (tipo === "servicio") {
+    const r = await api.servicioPorSlug(slug);
+    const s = r.servicio as Servicio;
+    return {
+      id: s.id,
+      nombre: s.nombre,
+      slug: s.slug,
+      precio: s.precio,
+      moneda: s.moneda,
+      descripcion: s.descripcion,
+    };
+  }
+  const r = await api.paquetePorSlug(slug);
+  const p = r.paquete as Paquete;
+  return {
+    id: p.id,
+    nombre: p.nombre,
+    slug: p.slug,
+    precio: p.precio,
+    moneda: p.moneda,
+    descripcion: p.descripcion,
+  };
+}
+
+export function Comprar({ tipo }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
 
-  const [paquete, setPaquete] = useState<Paquete | null>(null);
+  const [item, setItem] = useState<ItemVitrina | null>(null);
   const [catalogo, setCatalogo] = useState<FuncionalidadExtra[]>([]);
   const [seleccionadas, setSeleccionadas] = useState<Set<string>>(new Set());
   const [negociar, setNegociar] = useState(false);
+  const [sesiones, setSesiones] = useState(1);
 
   const [form, setForm] = useState({ nombre: "", email: "", password: "" });
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
+  const [mostrarFuga, setMostrarFuga] = useState(false);
+  const [motivoFuga, setMotivoFuga] = useState("");
+  const [fugaEnviado, setFugaEnviado] = useState(false);
+
+  const conExtras = tipo === "paquete" || tipo === "plantilla";
 
   useEffect(() => {
     if (!slug) return;
-    void api.paquetePorSlug(slug).then((r) => setPaquete(r.paquete));
-    void api
-      .funcionalidades()
-      .then((r) => setCatalogo(r.funcionalidades))
-      .catch(() => setCatalogo([]));
-  }, [slug]);
+    cargarItem(tipo, slug)
+      .then(setItem)
+      .catch(() => setErrorGeneral("No encontramos este producto."));
+    if (conExtras) {
+      void api
+        .funcionalidades()
+        .then((r) => setCatalogo(r.funcionalidades))
+        .catch(() => setCatalogo([]));
+    }
+  }, [slug, tipo, conExtras]);
 
   const porCategoria = useMemo(() => {
     const grupos = new Map<string, FuncionalidadExtra[]>();
@@ -63,13 +140,15 @@ export function Comprar() {
   );
 
   const { cms } = useTema();
-  const conDescuento = descuentoAplicable(cms);
-  const precioBase = paquete
+  const conDescuento =
+    tipo !== "servicio" && descuentoAplicable(cms) && item != null;
+  const precioBase = item
     ? conDescuento
-      ? precioConDescuento(paquete.precio, cms.descuento.porcentaje)
-      : paquete.precio
+      ? precioConDescuento(item.precio, cms.descuento.porcentaje)
+      : item.precio
     : 0;
-  const total = precioBase + totalExtras;
+  const total =
+    tipo === "servicio" ? precioBase * sesiones : precioBase + totalExtras;
 
   function alternar(id: string) {
     setSeleccionadas((prev) => {
@@ -92,17 +171,18 @@ export function Comprar() {
   }
 
   async function pagar() {
-    if (!paquete || !validar()) return;
+    if (!item || !validar()) return;
     setEnviando(true);
     setErrorGeneral(null);
     try {
       const resultado = await api.checkout({
-        paqueteId: paquete.id,
+        tipoProducto: tipo,
+        ...(tipo === "paquete" ? { paqueteId: item.id } : { productoId: item.id }),
+        ...(tipo === "servicio" ? { cantidad: sesiones } : {}),
+        ...(conExtras ? { funcionalidades: [...seleccionadas], negociarDespues: negociar } : {}),
         nombre: form.nombre,
         email: form.email,
         password: form.password,
-        funcionalidades: [...seleccionadas],
-        negociarDespues: negociar,
       });
       if (resultado.urlPago) {
         window.location.href = resultado.urlPago;
@@ -125,90 +205,135 @@ export function Comprar() {
     }
   }
 
-  if (!paquete) {
+  if (!item) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center">
-        <p>Cargando...</p>
+        <p>{errorGeneral ?? "Cargando..."}</p>
       </div>
     );
   }
 
+  const titulo =
+    tipo === "servicio" ? "Reserva tus sesiones" : "Personaliza y compra";
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
-      <Button variant="ghost" size="sm" onClick={() => navigate(`/productos/${slug}`)}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate(`${RUTAS[tipo]}/${slug}`)}
+      >
         ← Volver al producto
       </Button>
-      <h1 className="mt-4 text-3xl font-bold">Personaliza y compra</h1>
+      <h1 className="mt-4 text-3xl font-bold">{titulo}</h1>
       <p className="mt-1 text-muted-foreground">
-        <strong>{paquete.nombre}</strong> — base ${paquete.precio} USD. Suma
-        funcionalidades (cada una incluye su propia vista).
+        <strong>{item.nombre}</strong> —{" "}
+        {tipo === "servicio"
+          ? `${item.precio} USD por sesión de 60 min`
+          : `base $${item.precio} USD. Suma funcionalidades (cada una incluye su propia vista).`}
       </p>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_320px]">
         <div>
-          {/* Selector de funcionalidades */}
-          <h2 className="text-lg font-semibold">Funcionalidades adicionales</h2>
-          {catalogo.length === 0 && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              (El catálogo aún no tiene funcionalidades cargadas.)
-            </p>
-          )}
-          <div className="mt-4 space-y-6">
-            {[...porCategoria.entries()].map(([categoria, items]) => (
-              <section key={categoria}>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {CATEGORIA_LABEL[categoria as FuncionalidadExtra["categoria"]]}
-                </h3>
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {items.map((f) => {
-                    const activa = seleccionadas.has(f.id);
-                    return (
-                      <label
-                        key={f.id}
-                        className={`flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-3 transition-colors ${
-                          activa
-                            ? "border-[var(--brand-acento)] bg-[var(--brand-acento)]/10"
-                            : "hover:bg-muted"
-                        }`}
-                      >
-                        <span>
-                          <span className="block text-sm font-medium">{f.nombre}</span>
-                          <span className="block text-xs text-muted-foreground">
-                            {COMPLEJIDAD_LABEL[f.complejidad]} · ${f.precio} USD
-                          </span>
-                        </span>
-                        <input
-                          type="checkbox"
-                          className="mt-1 size-4 accent-[var(--brand-acento)]"
-                          checked={activa}
-                          onChange={() => alternar(f.id)}
-                          aria-label={f.nombre}
-                        />
-                      </label>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
+          {tipo === "servicio" ? (
+            <section>
+              <h2 className="text-lg font-semibold">Cantidad de sesiones</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Puedes reservar hasta {MAX_SESIONES} sesiones de golpe. Agendaríamos
+                cada una en el canal del servicio; las que no uses no se cobran
+                duplicadas: puedes reagendar.
+              </p>
+              <div className="mt-4 flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Menos sesiones"
+                  disabled={sesiones <= 1}
+                  onClick={() => setSesiones((s) => Math.max(1, s - 1))}
+                >
+                  <Minus className="size-4" />
+                </Button>
+                <span className="min-w-16 text-center text-2xl font-bold">
+                  {sesiones}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Más sesiones"
+                  disabled={sesiones >= MAX_SESIONES}
+                  onClick={() => setSesiones((s) => Math.min(MAX_SESIONES, s + 1))}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
+            </section>
+          ) : (
+            <>
+              {/* Selector de funcionalidades */}
+              <h2 className="text-lg font-semibold">Funcionalidades adicionales</h2>
+              {catalogo.length === 0 && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  (El catálogo aún no tiene funcionalidades cargadas.)
+                </p>
+              )}
+              <div className="mt-4 space-y-6">
+                {[...porCategoria.entries()].map(([categoria, items]) => (
+                  <section key={categoria}>
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                      {CATEGORIA_LABEL[categoria as FuncionalidadExtra["categoria"]]}
+                    </h3>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {items.map((f) => {
+                        const activa = seleccionadas.has(f.id);
+                        return (
+                          <label
+                            key={f.id}
+                            className={`flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-3 transition-colors ${
+                              activa
+                                ? "border-[var(--brand-acento)] bg-[var(--brand-acento)]/10"
+                                : "hover:bg-muted"
+                            }`}
+                          >
+                            <span>
+                              <span className="block text-sm font-medium">{f.nombre}</span>
+                              <span className="block text-xs text-muted-foreground">
+                                {COMPLEJIDAD_LABEL[f.complejidad]} · ${f.precio} USD
+                              </span>
+                            </span>
+                            <input
+                              type="checkbox"
+                              className="mt-1 size-4 accent-[var(--brand-acento)]"
+                              checked={activa}
+                              onChange={() => alternar(f.id)}
+                              aria-label={f.nombre}
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </div>
 
-          <label className="mt-8 flex cursor-pointer items-start gap-3 rounded-lg border p-4">
-            <input
-              type="checkbox"
-              className="mt-1 size-4 accent-[var(--brand-acento)]"
-              checked={negociar}
-              onChange={(e) => setNegociar(e.target.checked)}
-            />
-            <span>
-              <span className="block text-sm font-medium">
-                No encontré la funcionalidad que necesito
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                Compra el paquete base y negociamos el costo de tu funcionalidad
-                especial después del pago.
-              </span>
-            </span>
-          </label>
+              <label className="mt-8 flex cursor-pointer items-start gap-3 rounded-lg border p-4">
+                <input
+                  type="checkbox"
+                  className="mt-1 size-4 accent-[var(--brand-acento)]"
+                  checked={negociar}
+                  onChange={(e) => setNegociar(e.target.checked)}
+                />
+                <span>
+                  <span className="block text-sm font-medium">
+                    No encontré la funcionalidad que necesito
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Compra el producto base y negociamos el costo de tu funcionalidad
+                    especial después del pago.
+                  </span>
+                </span>
+              </label>
+            </>
+          )}
         </div>
 
         {/* Resumen + registro */}
@@ -216,12 +341,17 @@ export function Comprar() {
           <h2 className="font-bold">Resumen</h2>
           <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt>{paquete.nombre}</dt>
+              <dt>
+                {item.nombre}
+                {tipo === "servicio" && sesiones > 1 && (
+                  <span className="ml-1 text-muted-foreground">× {sesiones}</span>
+                )}
+              </dt>
               <dd>
-                ${precioBase} USD
+                ${precioBase.toLocaleString("es-CO")} USD
                 {conDescuento && (
                   <span className="ml-1.5 text-xs text-muted-foreground line-through opacity-55">
-                    ${paquete.precio} USD
+                    ${item.precio} USD
                   </span>
                 )}
               </dd>
@@ -235,12 +365,12 @@ export function Comprar() {
             {seleccionadas.size > 0 && (
               <div className="flex justify-between text-muted-foreground">
                 <dt>{seleccionadas.size} funcionalidad(es)</dt>
-                <dd>${totalExtras} USD</dd>
+                <dd>${totalExtras.toLocaleString("es-CO")} USD</dd>
               </div>
             )}
             <div className="flex justify-between border-t pt-2 text-base font-bold">
               <dt>Total</dt>
-              <dd>${total} USD</dd>
+              <dd>${total.toLocaleString("es-CO")} USD</dd>
             </div>
           </dl>
 
@@ -303,13 +433,62 @@ export function Comprar() {
             onClick={pagar}
           >
             {enviando ? <Loader2 className="animate-spin" /> : null}
-            {enviando ? "Creando tu pedido..." : `Pagar $${total} USD`}
+            {enviando
+              ? "Creando tu pedido..."
+              : tipo === "servicio"
+                ? `Pagar ${sesiones} sesión(es) · $${total} USD`
+                : `Pagar $${total} USD`}
           </Button>
+          <button
+            type="button"
+            onClick={() => setMostrarFuga((v) => !v)}
+            className="mt-3 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground hover:text-[var(--brand-primario)]"
+          >
+            <HelpCircle className="size-3.5" />
+            ¿Algo te detiene? Cuéntanos
+          </button>
+          {mostrarFuga && (
+            <div className="mt-2 rounded-lg border p-3">
+              <textarea
+                aria-label="Motivo"
+                rows={2}
+                placeholder="Precio, dudas, plazos… (te respondemos por correo)"
+                value={motivoFuga}
+                onChange={(e) => setMotivoFuga(e.target.value)}
+                className="w-full rounded-md border px-3 py-2 text-xs"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full"
+                disabled={!motivoFuga.trim() || fugaEnviado}
+                onClick={async () => {
+                  try {
+                    await api.contacto({
+                      nombre: form.nombre || "Visitante",
+                      email: form.email || "sin-correo@daju.co",
+                      asunto: "Fuga de compra",
+                      mensaje: `${item.nombre} \u2014 ${motivoFuga.trim()}`,
+                    });
+                    setFugaEnviado(true);
+                  } catch {
+                    setErrorGeneral("No pudimos enviar tu mensaje.");
+                  }
+                }}
+              >
+                {fugaEnviado ? "Enviado ✓" : "Enviar"}
+              </Button>
+            </div>
+          )}
           <p className="mt-2 text-center text-[11px] text-muted-foreground">
-            Crearás tu cuenta de cliente y te enviaremos el enlace de pago.
+            {tipo === "servicio"
+              ? "Creas tu cuenta y te enviamos el enlace de pago; luego agendamos tus citas."
+              : "Crearás tu cuenta de cliente y te enviaremos el enlace de pago."}
           </p>
         </aside>
       </div>
     </div>
   );
 }
+
+export default Comprar;

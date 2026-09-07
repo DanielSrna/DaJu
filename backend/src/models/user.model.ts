@@ -10,6 +10,8 @@ const userSchema = new Schema(
       trim: true,
       index: true,
     },
+    passwordResetToken: { type: String, default: "", select: false },
+    passwordResetExpires: { type: Date, default: null, select: false },
     passwordHash: {
       type: String,
       required: true,

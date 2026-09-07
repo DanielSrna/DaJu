@@ -45,6 +45,42 @@ export class AuthController {
     }
   }
 
+  async solicitarRestablecimiento(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("AuthController.solicitarRestablecimiento");
+    try {
+      await authService.solicitarRestablecimiento(req.body.email);
+      res
+        .status(200)
+        .json({
+          ok: true,
+          mensaje: "Si el correo existe, recibirás un enlace en unos minutos.",
+        });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async restablecerContrasena(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("AuthController.restablecerContrasena");
+    try {
+      await authService.restablecerContrasena(
+        req.body.token,
+        req.body.password,
+      );
+      res.status(200).json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     logger.proceso("AuthController.login");
     try {

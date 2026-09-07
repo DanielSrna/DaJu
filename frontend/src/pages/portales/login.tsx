@@ -100,6 +100,14 @@ export function Login() {
         </Button>
       </form>
 
+      <p className="mt-4 text-center text-sm">
+        <Link
+          to="/cliente/recuperar"
+          className="font-semibold text-[var(--brand-primario)] underline underline-offset-4 hover:text-[var(--brand-acento)]"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </p>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         ¿No tienes cuenta? Compra un paquete y la creamos automáticamente
       </p>

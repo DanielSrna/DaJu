@@ -155,6 +155,31 @@ router.get(
  *       403:
  *         description: Solo admin
  */
+/**
+ * @swagger
+ * /proyectos/{id}/bitacora:
+ *   get:
+ *     summary: Bitácora de actividad del proyecto
+ *     description: Estado, vistas, funciones y cotizaciones con quién y cuándo.
+ *     tags: [Proyectos]
+ *     security: [cookieAuth: []]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Entradas (30 más recientes)
+ */
+router.get(
+  "/proyectos/:id/bitacora",
+  authMiddleware,
+  param("id").isMongoId(),
+  validate,
+  proyectoController.bitacora.bind(proyectoController),
+);
+
 router.put(
   "/proyectos/:id/estado",
   authMiddleware,

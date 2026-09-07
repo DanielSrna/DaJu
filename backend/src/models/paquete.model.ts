@@ -17,6 +17,7 @@ const paqueteSchema = new Schema(
       index: true,
     },
     descripcion: { type: String, required: true, trim: true },
+    garantia: { type: String, default: "", trim: true },
     precio: { type: Number, required: true, min: 0 },
     moneda: { type: String, default: "USD", trim: true },
     vistasIncluidas: { type: Number, required: true, min: 1 },

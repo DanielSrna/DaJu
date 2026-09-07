@@ -154,6 +154,37 @@ export class ProyectoController {
       next(error);
     }
   }
+
+  async bitacora(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res
+          .status(401)
+          .json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } });
+        return;
+      }
+      const { bitacoraService } = await import("../services/bitacora.service");
+      const { proyectoService: ps } =
+        await import("../services/proyecto.service");
+      await (
+        ps as unknown as {
+          verificarAcceso?: (
+            id: string,
+            rol: string,
+            userId: string,
+          ) => Promise<void>;
+        }
+      ).verificarAcceso?.(req.params.id, req.user.rol, req.user.id);
+      const entradas = await bitacoraService.listar(req.params.id);
+      res.status(200).json({ entradas });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const proyectoController = new ProyectoController();

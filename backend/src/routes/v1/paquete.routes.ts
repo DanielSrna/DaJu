@@ -132,6 +132,7 @@ router.post(
     .trim(),
   body("tipo").isIn(["validor", "corporativo", "operativo"]),
   body("descripcion").isString().isLength({ min: 10 }).trim(),
+  body("garantia").optional().isString().isLength({ max: 5000 }).trim(),
   body("precio").isFloat({ min: 0 }),
   body("moneda")
     .optional()
@@ -187,7 +188,8 @@ router.put(
     .optional()
     .isString()
     .matches(/^[a-z0-9-]+$/),
-  body("tipo").optional().isIn(["validor", "corporativo", "operativo"]),
+  body("descripcion").optional().isString().isLength({ min: 10 }).trim(),
+  body("garantia").optional().isString().isLength({ max: 5000 }).trim(),
   body("descripcion").optional().isString().isLength({ min: 10 }).trim(),
   body("precio").optional().isFloat({ min: 0 }),
   body("moneda")

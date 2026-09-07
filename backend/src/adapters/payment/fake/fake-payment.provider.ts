@@ -25,6 +25,10 @@ export class FakePaymentProvider implements PaymentProvider {
     };
   }
 
+  async refund(_paymentId: string): Promise<void> {
+    return;
+  }
+
   async handleWebhook(body: Record<string, unknown>): Promise<{
     eventType: string;
     paymentId: string;

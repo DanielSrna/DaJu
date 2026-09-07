@@ -92,6 +92,67 @@ router.post(
  *         description: Credenciales inválidas
  *         content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
  */
+/**
+ * @swagger
+ * /auth/forgot:
+ *   post:
+ *     summary: Solicitar restablecimiento de contraseña
+ *     description: Envía un enlace temporal (30 min). No revela si la cuenta existe.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200:
+ *         description: Solicitud procesada
+ */
+router.post(
+  "/auth/forgot",
+  body("email").isEmail().trim().toLowerCase(),
+  validate,
+  authController.solicitarRestablecimiento.bind(authController),
+);
+
+/**
+ * @swagger
+ * /auth/reset:
+ *   post:
+ *     summary: Restablecer contraseña con el token del correo
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token: { type: string }
+ *               password: { type: string, format: password }
+ *     responses:
+ *       200:
+ *         description: Contraseña actualizada
+ *       400:
+ *         description: Enlace expirado o inválido
+ */
+router.post(
+  "/auth/reset",
+  body("token").isString().notEmpty(),
+  body("password")
+    .isString()
+    .isLength({ min: 8, max: 72 })
+    .matches(/^(?=.*[a-zA-Z])(?=.*\d)/)
+    .withMessage("La contraseña debe tener letras y números (mínimo 8)"),
+  validate,
+  authController.restablecerContrasena.bind(authController),
+);
+
 router.post(
   "/auth/login",
   authRateLimiter,

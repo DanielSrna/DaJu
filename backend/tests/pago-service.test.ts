@@ -45,6 +45,7 @@ describe("PagoService (flujo completo con proveedor simulado)", () => {
 
   beforeEach(async () => {
     provider.setWebhookState("paid");
+    provider.checkoutCount = 0;
     await PagoModel.deleteMany({});
     await ProyectoModel.deleteMany({});
     await UserModel.deleteMany({});

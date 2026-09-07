@@ -100,6 +100,11 @@ export class EpaycoPaymentProvider implements PaymentProvider {
     }
   }
 
+  /** ePayco comercial pendiente; el reembolso se procesa manualmente. */
+  async refund(_paymentId: string): Promise<void> {
+    throw new Error("Reembolsos en ePayco no disponibles desde la plataforma");
+  }
+
   async handleWebhook(body: Record<string, unknown>): Promise<{
     eventType: string;
     paymentId: string;

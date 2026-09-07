@@ -58,27 +58,105 @@ export class NotificacionesService {
   async enviarCompraConfirmada(data: {
     email: string;
     nombreCliente: string;
-    paquete: string;
-    fechaEntrega: Date;
+    producto: string;
+    detalle: string;
+    fechaEntrega: Date | null;
   }): Promise<void> {
     logger.proceso("NotificacionesService.enviarCompraConfirmada", {
       email: data.email,
     });
     await this.email.send({
       to: data.email,
-      subject: "¡Pago confirmado! Tu proyecto está en marcha — MainPlataform",
+      subject: "¡Pago confirmado! Tu compra está en curso — MainPlataform",
       html: `
         <h2>¡Gracias, ${escapeHtml(data.nombreCliente)}!</h2>
-        <p>Tu pago fue <strong>confirmado</strong> y tu proyecto ya fue creado.</p>
-        <p><strong>Paquete:</strong> ${escapeHtml(data.paquete)}</p>
-        <p><strong>Fecha estimada de entrega:</strong> ${formatearFecha(data.fechaEntrega)}</p>
-        <p>Completa tu briefing para que empecemos cuanto antes.</p>
+        <p>Tu pago fue <strong>confirmado</strong>.</p>
+        <p><strong>Producto:</strong> ${escapeHtml(data.producto)}</p>
+        ${data.fechaEntrega ? `<p><strong>Fecha estimada de entrega:</strong> ${formatearFecha(data.fechaEntrega)}</p>` : ""}
+        <p>${escapeHtml(data.detalle)}</p>
         <p>— Equipo MainPlataform</p>
       `,
     });
     logger.exito("NotificacionesService.enviarCompraConfirmada completado", {
       email: data.email,
     });
+  }
+
+  /** Cita confirmada: llega al cliente con la franja y el link. */
+  async enviarCitaConfirmada(data: {
+    email: string;
+    cliente: string;
+    sesion: number;
+    fecha: string;
+    canal: string;
+    linkVideollamada: string;
+  }): Promise<void> {
+    logger.proceso("NotificacionesService.enviarCitaConfirmada", {
+      email: data.email,
+    });
+    await this.email.send({
+      to: data.email,
+      subject: `Cita confirmada · Sesión ${data.sesion} — MainPlataform`,
+      html: `
+        <h2>¡Gracias, ${escapeHtml(data.cliente)}!</h2>
+        <p>Tu sesión <strong>${data.sesion}</strong> quedó <strong>confirmada</strong>:</p>
+        <p><strong>Fecha:</strong> ${escapeHtml(data.fecha)}</p>
+        <p><strong>Canal:</strong> ${escapeHtml(data.canal)}</p>
+        ${data.linkVideollamada ? `<p><a href="${escapeHtml(data.linkVideollamada)}">Unirse a la videollamada</a></p>` : "<p>Recibirás el enlace de la videollamada en tu espacio de consultoría.</p>"}
+        <p>— Equipo MainPlataform</p>
+      `,
+    });
+    logger.exito("NotificacionesService.enviarCitaConfirmada completado");
+  }
+
+  /** Cotización respondida: el cliente sabe que hay presupuesto por aceptar. */
+  async enviarCotizacionRespondida(data: {
+    email: string;
+    cliente: string;
+    titulo: string;
+    costo: number;
+    respuesta: string;
+  }): Promise<void> {
+    logger.proceso("NotificacionesService.enviarCotizacionRespondida", {
+      email: data.email,
+    });
+    await this.email.send({
+      to: data.email,
+      subject: `Cotización de "${data.titulo}" — MainPlataform`,
+      html: `
+        <h2>¡Hola, ${escapeHtml(data.cliente)}!</h2>
+        <p>El equipo respondió tu solicitud <strong>${escapeHtml(data.titulo)}</strong>:</p>
+        <p><strong>Presupuesto:</strong> $${data.costo} USD</p>
+        <p>${escapeHtml(data.respuesta)}</p>
+        <p>Entra a tu portal para <strong>aceptar y pagar</strong> cuando quieras.</p>
+        <p>— Equipo MainPlataform</p>
+      `,
+    });
+    logger.exito("NotificacionesService.enviarCotizacionRespondida completado");
+  }
+
+  /** Restablecer contraseña: enlace temporal de 30 minutos. */
+  async enviarRestablecer(data: {
+    email: string;
+    token: string;
+  }): Promise<void> {
+    logger.proceso("NotificacionesService.enviarRestablecer", {
+      email: data.email,
+    });
+    const base = process.env.FRONTEND_URL ?? "http://localhost:5173";
+    const url = `${base}/cliente/restablecer?token=${data.token}`;
+    await this.email.send({
+      to: data.email,
+      subject: "Restablece tu contraseña — MainPlataform",
+      html: `
+        <h2>Restablece tu contraseña</h2>
+        <p>Recibimos tu solicitud. Este enlace es válido por <strong>30 minutos</strong>:</p>
+        <p><a href="${url}">${url}</a></p>
+        <p>Si no fuiste tú, ignora este correo.</p>
+        <p>— Equipo MainPlataform</p>
+      `,
+    });
+    logger.exito("NotificacionesService.enviarRestablecer completado");
   }
 
   /** Monitor de progreso: aviso por cada cambio de estado. */

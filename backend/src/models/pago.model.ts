@@ -8,8 +8,32 @@ import {
 
 const pagoSchema = new Schema(
   {
-    paqueteId: { type: Types.ObjectId, ref: "Paquete", required: true },
-    paqueteSlug: { type: String, required: true, index: true },
+    tipoProducto: {
+      type: String,
+      enum: ["paquete", "plantilla", "servicio", "funcionalidad"],
+      default: "paquete",
+      index: true,
+      comment: "Familia comprada; define el entorno de acceso",
+    },
+    paqueteId: { type: Types.ObjectId, ref: "Paquete", default: null },
+    productoId: {
+      type: Types.ObjectId,
+      default: null,
+      comment: "Id del ítem comprado (plantilla o servicio)",
+    },
+    paqueteSlug: { type: String, default: "", index: true },
+    productoSlug: {
+      type: String,
+      default: "",
+      index: true,
+      comment: "Slug del ítem comprado (plantilla o servicio)",
+    },
+    cantidad: {
+      type: Number,
+      default: 1,
+      min: 1,
+      comment: "Sesiones compradas (solo servicios)",
+    },
     descripcion: { type: String, required: true, trim: true },
     monto: { type: Number, required: true, min: 0 },
     moneda: { type: String, default: "USD", trim: true },

@@ -48,31 +48,32 @@ const METAS_EXACTAS: Record<string, MetaPagina> = {
   "/": {
     titulo: "DaJu — Agencia web | Webs que venden",
     descripcion:
-      "Landings, webs corporativas y mini-dashboards hechos a la medida, con soporte con garantía. Tu negocio merece una web que trabaje por ti.",
+      "Landings, webs corporativas y mini-dashboards a la medida, con soporte con garantía. Cuéntanos tu idea y recibe tu web lista en semanas.",
   },
   "/productos": {
-    titulo: "Productos — DaJu | Paquetes, plantillas y consultoría",
+    titulo: "Paquetes, plantillas y consultoría — DaJu",
     descripcion:
-      "Paquetes de alcance cerrado, plantillas listas para desplegar y consultoría técnica. Precios claros y soporte incluido.",
+      "Paquetes de alcance cerrado, plantillas listas para desplegar y consultoría por sesiones. Precios claros, soporte con garantía y entrega fija.",
   },
   "/faq": {
     titulo: "Preguntas frecuentes — DaJu",
     descripcion:
-      "Las dudas más comunes antes de empezar un proyecto: garantías, tiempos de entrega, soporte y costos.",
+      "Resolvemos tus dudas sobre precios, tiempos de entrega, garantía y soporte antes de que empieces tu proyecto.",
   },
   "/blog": {
-    titulo: "Blog — DaJu | Conceptos para crecer",
+    titulo: "Blog — DaJu | Conceptos sin tecnicismos",
     descripcion:
-      "Conceptos clave explicados sin tecnicismos para negocios que están empezando o buscando la solución correcta.",
+      "Conceptos y noticias para negocios que quieren crecer: aprende qué web necesitas y qué se hace en cada etapa.",
   },
   "/contacto": {
-    titulo: "Contacto — DaJu",
-    descripcion: "Cuéntanos tu idea y te ayudamos a convertirla en una web lista para crecer.",
+    titulo: "Contacto — DaJu | Cuéntanos tu idea",
+    descripcion:
+      "Conversemos: te ayudamos a convertir tu idea en una web lista para crecer, sin presión y con precios claros.",
   },
   "/postventa": {
-    titulo: "Servicios post-venta — DaJu",
+    titulo: "Postventa — DaJu | Briefing y garantía",
     descripcion:
-      "Briefing guiado, seguimiento por etapas, fecha de entrega fija y soporte con garantía después de la compra.",
+      "El viaje después de comprar: briefing guiado, seguimiento por etapas, fecha de entrega fija y soporte con garantía.",
   },
   "/terminos": {
     titulo: "Términos y condiciones — DaJu",
@@ -127,6 +128,32 @@ function metaBase(pathname: string): MetaPagina {
     return {
       titulo: "Detalle del producto — DaJu",
       descripcion: "Alcance, tiempos, soporte y precio de este producto DaJu.",
+    };
+  }
+
+  if (pathname.startsWith("/plantillas/")) {
+    if (pathname.endsWith("/comprar")) {
+      return {
+        titulo: "Finalizar compra — DaJu",
+        descripcion: "Adapta la plantilla con funciones extras y finaliza tu compra.",
+      };
+    }
+    return {
+      titulo: "Plantilla — DaJu | Soluciones listas para desplegar",
+      descripcion: "Vistas, funciones incluidas, precio y soporte de esta plantilla DaJu.",
+    };
+  }
+
+  if (pathname.startsWith("/servicios/")) {
+    if (pathname.endsWith("/comprar")) {
+      return {
+        titulo: "Reservar sesión — DaJu",
+        descripcion: "Compra sesiones de consultoría con un ingeniero senior.",
+      };
+    }
+    return {
+      titulo: "Consultoría — DaJu | Sesiones de alto nivel",
+      descripcion: "Qué se trabaja, cómo se agenda y precio de esta sesión DaJu.",
     };
   }
 

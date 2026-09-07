@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EditorTexto } from "@/components/editor/editor-texto";
 import { api } from "@/lib/api/cliente";
 import type { Oferta, OfertaInput } from "@/lib/api/tipos";
 
@@ -239,17 +240,18 @@ function FormularioOferta({ tipo, id }: { tipo: "plantilla" | "consultoria"; id:
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
           />
         </label>
-        <label className="block text-sm font-medium">
-          Descripción
-          <textarea
-            required
-            rows={3}
-            aria-label="Descripción"
+        <div>
+          <span className="text-sm font-medium">Descripción</span>
+          <EditorTexto
+            ariaLabel="Descripción"
             value={form.descripcion}
-            onChange={(e) => set("descripcion", e.target.value)}
-            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
+            onChange={(html) => set("descripcion", html)}
+            rows={5}
           />
-        </label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Títulos (H2/H3), negrita, cursiva y 3 tamaños.
+          </p>
+        </div>
 
         {tipo === "plantilla" ? (
           <>

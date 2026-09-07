@@ -9,7 +9,6 @@ import {
   HelpCircle,
   ImageIcon,
   Layers,
-  Tag,
 } from "lucide-react";
 import {
   Accordion,
@@ -18,11 +17,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { TextoEnriquecido } from "@/components/editor/editor-texto";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/cliente";
 import { useTema } from "@/lib/tema";
 import { precioConDescuento, diasHabitilesConExtra, descuentoAplicable, recomendacionesDePaquetes } from "@/lib/cms";
-import type { Paquete, Oferta } from "@/lib/api/tipos";
+import type { Paquete, Plantilla, Servicio } from "@/lib/api/tipos";
 
 /**
  * Placeholder visual para paquetes sin imagen:
@@ -81,7 +81,8 @@ const FILAS_COMPARATIVA = [
 
 export function Productos() {
   const [paquetes, setPaquetes] = useState<Paquete[] | null>(null);
-  const [ofertas, setOfertas] = useState<Oferta[]>([]);
+  const [plantillas, setPlantillas] = useState<Plantilla[] | null>(null);
+  const [servicios, setServicios] = useState<Servicio[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { cms } = useTema();
 
@@ -90,11 +91,14 @@ export function Productos() {
 
   const cargar = (): void => {
     setPaquetes(null);
+    setPlantillas(null);
+    setServicios(null);
     setError(null);
-    Promise.all([api.paquetes(), api.ofertas()])
-      .then(([p, o]) => {
+    Promise.all([api.paquetes(), api.plantillas(), api.servicios()])
+      .then(([p, pl, sv]) => {
         setPaquetes(p.paquetes);
-        setOfertas(o.ofertas);
+        setPlantillas(pl.plantillas);
+        setServicios(sv.servicios);
       })
       .catch(() => setError("No pudimos cargar los productos. Intenta de nuevo."));
   };
@@ -103,11 +107,9 @@ export function Productos() {
     cargar();
   }, []);
 
-  const plantillas = ofertas.filter((o) => o.tipo === "plantilla");
-  const servicios = ofertas.filter((o) => o.tipo === "consultoria");
   const recomendaciones = paquetes ? recomendacionesDePaquetes(paquetes) : [];
   const hayContenido =
-    (paquetes?.length ?? 0) > 0 || plantillas.length > 0 || servicios.length > 0;
+    (paquetes?.length ?? 0) + (plantillas?.length ?? 0) + (servicios?.length ?? 0) > 0;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14">
@@ -191,9 +193,10 @@ export function Productos() {
                       {DESCRIPCION_TIPO[paquete.tipo]}
                     </p>
                     <h3 className="mt-4 text-xl font-bold">{paquete.nombre}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                      {paquete.descripcion}
-                    </p>
+                    <TextoEnriquecido
+                      html={paquete.descripcion}
+                      className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground [&_p]:mt-1 [&_p]:first:mt-0"
+                    />
 
                     <ul className="mt-5 space-y-2.5">
                       {paquete.features.slice(0, 3).map((f) => (
@@ -244,7 +247,7 @@ export function Productos() {
       </section>
 
       {/*
-        Plantillas: soluciones web listas para desplegar (datos del CMS).
+        Plantillas: soluciones web listas para desplegar (catálogo real).
         El cliente asume los costos de nube y puede sumar funciones.
       */}
       <section id="plantillas" className="mt-16 scroll-mt-24">
@@ -254,55 +257,80 @@ export function Productos() {
           costo de la nube (dominio y hosting) y nosotros lo dejamos funcionando.
           Puedes sumar funciones por costo adicional.
         </p>
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {plantillas.map((o) => (
-            <article
-              key={o.id}
-              className="flex flex-col rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="flex size-11 items-center justify-center rounded-lg bg-[var(--brand-primario)] text-[var(--brand-acento)]">
-                <Blocks className="size-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-bold">{o.nombre}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{o.descripcion}</p>
-              <ul className="mt-4 space-y-2">
-                {o.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <Check className="mt-0.5 size-4 shrink-0 text-[var(--brand-acento)]" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-auto pt-5">
-                <p className="relative inline-flex items-baseline gap-1.5 rounded-full border border-[var(--brand-acento)]/40 bg-[var(--brand-acento)]/10 px-3 py-1">
-                  {hayDescuento && (
-                    <span className="absolute -top-3.5 left-0 inline-block rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                      -{cms.descuento.porcentaje}%
-                    </span>
-                  )}
-                  Desde{" "}
-                  <span className="text-lg font-bold text-[var(--brand-primario)]">
-                    ${precioConDescuento(o.desde ?? 0, cms.descuento.porcentaje).toLocaleString("es-CO")}
-                  </span>
-                  {hayDescuento && (
-                    <span className="ml-0.5 text-xs text-muted-foreground line-through opacity-55">
-                      ${(o.desde ?? 0).toLocaleString("es-CO")}
-                    </span>
-                  )}
-                  <span className="text-xs font-medium text-muted-foreground">
-                    + nube
-                  </span>
-                </p>
-                <Button asChild variant="outline" className="mt-3 w-full">
-                  <Link to="/contacto">
-                    Solicitar esta plantilla
-                    <ArrowRight />
-                  </Link>
-                </Button>
-              </div>
-            </article>
-          ))}
-        </div>
+        {!plantillas ? (
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-72 w-full rounded-xl" />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {plantillas.map((p) => (
+              <article
+                key={p.id}
+                className="flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-lg"
+              >
+                {p.imagen ? (
+                  <img
+                    src={p.imagen.url}
+                    alt={p.nombre}
+                    className="aspect-[16/9] w-full border-b object-cover"
+                  />
+                ) : (
+                  <div className="flex aspect-[16/9] w-full items-center justify-center bg-[var(--brand-primario)]/5">
+                    <Blocks className="size-10 text-[var(--brand-primario)]/30" />
+                  </div>
+                )}
+                <div className="flex flex-1 flex-col p-6">
+                  <p className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--brand-primario)]/[0.08] px-2.5 py-1 text-xs font-semibold text-[var(--brand-primario)]">
+                    <Blocks className="size-3.5 text-[var(--brand-acento)]" />
+                    Plantilla · {p.plataforma}
+                  </p>
+                  <h3 className="mt-3 text-xl font-bold">{p.nombre}</h3>
+                  <TextoEnriquecido
+                    html={p.descripcion}
+                    className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground [&_p]:mt-1 [&_p]:first:mt-0"
+                  />
+                  <ul className="mt-5 space-y-2">
+                    {p.features.slice(0, 3).map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm">
+                        <Check className="mt-0.5 size-4 shrink-0 text-[var(--brand-acento)]" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-auto pt-5">
+                    <p className="relative inline-flex items-baseline gap-1.5 rounded-full border border-[var(--brand-acento)]/40 bg-[var(--brand-acento)]/10 px-3 py-1">
+                      {hayDescuento && (
+                        <span className="absolute -top-3.5 left-0 inline-block rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          -{cms.descuento.porcentaje}%
+                        </span>
+                      )}
+                      Desde{" "}
+                      <span className="text-lg font-bold text-[var(--brand-primario)]">
+                        ${precioConDescuento(p.precio, cms.descuento.porcentaje).toLocaleString("es-CO")}
+                      </span>
+                      {hayDescuento && (
+                        <span className="ml-0.5 text-xs text-muted-foreground line-through opacity-55">
+                          ${p.precio.toLocaleString("es-CO")}
+                        </span>
+                      )}
+                      <span className="text-xs font-medium text-muted-foreground">
+                        + nube
+                      </span>
+                    </p>
+                    <Button asChild className="mt-3 w-full" variant="accent">
+                      <Link to={`/plantillas/${p.slug}`}>
+                        Ver detalle
+                        <ArrowRight />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       {/*
@@ -315,40 +343,51 @@ export function Productos() {
           revisa, acelera o asesora tu proyecto. Se agendan por Meet o Zoom y el
           precio depende del alcance de cada sesión.
         </p>
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {servicios.map((o) => (
-            <article
-              key={o.id}
-              className="flex flex-col rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="flex size-11 items-center justify-center rounded-lg bg-[var(--brand-primario)] text-[var(--brand-acento)]">
-                <Code2 className="size-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-bold">{o.nombre}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{o.descripcion}</p>
-              {o.para && (
-                <p className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[var(--brand-primario)]/10 bg-[var(--brand-primario)]/[0.04] px-3 py-2 text-xs text-muted-foreground">
-                  <Code2 className="size-3.5 shrink-0 text-[var(--brand-acento)]" />
-                  {o.para}
-                </p>
-              )}
-              {hayDescuento && (
-                <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-red-600/10 px-2.5 py-1 text-xs font-semibold text-red-700">
-                  <Tag className="size-3" />
-                  -{cms.descuento.porcentaje}% en sesiones durante la promo
-                </p>
-              )}
-              <div className="mt-auto pt-5">
-                <Button asChild className="w-full" variant="accent">
-                  <Link to="/contacto">
-                    Agendar una sesión
-                    <ArrowRight />
-                  </Link>
-                </Button>
-              </div>
-            </article>
-          ))}
-        </div>
+        {!servicios ? (
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-72 w-full rounded-xl" />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {servicios.map((s) => (
+              <article
+                key={s.id}
+                className="flex flex-col rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
+              >
+                <div className="flex size-11 items-center justify-center rounded-lg bg-[var(--brand-primario)] text-[var(--brand-acento)]">
+                  <Code2 className="size-5" />
+                </div>
+                <h3 className="mt-4 text-lg font-bold">{s.nombre}</h3>
+                <TextoEnriquecido html={s.descripcion} className="mt-2 text-sm text-muted-foreground" />
+                <ul className="mt-4 space-y-2">
+                  {s.incluye.slice(0, 3).map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm">
+                      <Check className="mt-0.5 size-4 shrink-0 text-[var(--brand-acento)]" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto pt-5">
+                  <p className="inline-flex items-baseline gap-1.5 rounded-full border border-[var(--brand-primario)]/15 bg-[var(--brand-primario)]/[0.04] px-3 py-1">
+                    <span className="text-xs font-medium text-muted-foreground">Sesión de {s.duracionMin} min ·</span>
+                    <span className="text-lg font-bold text-[var(--brand-primario)]">
+                      ${s.precio.toLocaleString("es-CO")}
+                    </span>
+                    <span className="text-xs font-medium text-muted-foreground">USD</span>
+                  </p>
+                  <Button asChild className="mt-3 w-full" variant="accent">
+                    <Link to={`/servicios/${s.slug}`}>
+                      Ver detalle
+                      <ArrowRight />
+                    </Link>
+                  </Button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       {/*
@@ -492,7 +531,7 @@ export function Productos() {
                         {plantillas.map((o) => (
                           <div key={o.id} className="rounded-lg border p-3">
                             <p className="font-semibold">{o.nombre}</p>
-                            <p className="mt-1 text-sm text-muted-foreground">{o.descripcion}</p>
+                            <TextoEnriquecido html={o.descripcion} className="mt-1 text-sm text-muted-foreground" />
                             {o.desde != null && (
                               <p className="mt-2 text-sm font-bold text-[var(--brand-primario)]">
                                 Desde ${precioConDescuento(o.desde, cms.descuento.porcentaje).toLocaleString("es-CO")}
@@ -520,7 +559,7 @@ export function Productos() {
                         {servicios.map((o) => (
                           <div key={o.id} className="rounded-lg border p-3">
                             <p className="font-semibold">{o.nombre}</p>
-                            <p className="mt-1 text-sm text-muted-foreground">{o.descripcion}</p>
+                            <TextoEnriquecido html={o.descripcion} className="mt-1 text-sm text-muted-foreground" />
                             {o.para && <p className="mt-2 text-xs text-muted-foreground">{o.para}</p>}
                           </div>
                         ))}

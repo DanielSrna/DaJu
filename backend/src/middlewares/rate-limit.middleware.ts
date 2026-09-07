@@ -7,9 +7,9 @@ export function buildLimiter(opts: {
   limit: number;
   message: { error: { code: string; message: string } };
 }) {
-  // En development los tests/verificaciones hacen muchas peticiones seguidas;
-  // el límite real se aplica en producción (NODE_ENV=production).
-  if (process.env.NODE_ENV !== "production") {
+  // Rate-limit DESACTIVADO por defecto (bloqueaba logins en desarrollo/producción).
+  // Para reactivarlo en un entorno concreto: RATE_LIMIT_ENABLED=true en el .env.
+  if (process.env.RATE_LIMIT_ENABLED !== "true") {
     return (_req: Request, _res: Response, next: NextFunction): void => next();
   }
   return rateLimit({

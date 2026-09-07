@@ -22,6 +22,20 @@ const paquetes = [
       'Diseño responsive',
       '2 meses de soporte técnico',
     ],
+    imagen: {
+      url: 'https://placehold.co/1600x686/f59e0b/0f1b2d.png?text=Paquete+Validor%5CnLanding+que+vende',
+      publicId: 'placehold-validor-portada',
+    },
+    galeria: [
+      {
+        url: 'https://placehold.co/1200x800/0f1b2d/f59e0b.png?text=Vista+1%5CnLa+landing+de+tu+negocio',
+        publicId: 'placehold-validor-vista1',
+      },
+      {
+        url: 'https://placehold.co/1200x800/94a3b8/ffffff.png?text=Vista+2%5CnMockups+y+dise%C3%B1o',
+        publicId: 'placehold-validor-vista2',
+      },
+    ],
     activo: true,
   },
   {
@@ -39,6 +53,20 @@ const paquetes = [
       'Web corporativa (hasta 4 vistas)',
       'Formularios de contacto',
       '6 meses de soporte técnico',
+    ],
+    imagen: {
+      url: 'https://placehold.co/1600x686/1d4ed8/ffffff.png?text=Paquete+Corporativo%5CnWeb+corporativa',
+      publicId: 'placehold-corporativo-portada',
+    },
+    galeria: [
+      {
+        url: 'https://placehold.co/1200x800/0f1b2d/1d4ed8.png?text=Vista+1%5CnWeb+de+hasta+4+vistas',
+        publicId: 'placehold-corporativo-vista1',
+      },
+      {
+        url: 'https://placehold.co/1200x800/94a3b8/ffffff.png?text=Vista+2%5CnFormularios+y+contacto',
+        publicId: 'placehold-corporativo-vista2',
+      },
     ],
     activo: true,
   },
@@ -58,6 +86,20 @@ const paquetes = [
       'Métricas de negocio',
       'Autenticación de usuarios',
       '1 año de soporte técnico',
+    ],
+    imagen: {
+      url: 'https://placehold.co/1600x686/0f766e/ffffff.png?text=Paquete+Operativo%5CnMini-dashboard+y+m%C3%A9tricas',
+      publicId: 'placehold-operativo-portada',
+    },
+    galeria: [
+      {
+        url: 'https://placehold.co/1200x800/0f1b2d/0f766e.png?text=Vista+1%5CnDashboard+con+m%C3%A9tricas',
+        publicId: 'placehold-operativo-vista1',
+      },
+      {
+        url: 'https://placehold.co/1200x800/94a3b8/ffffff.png?text=Vista+2%5CnGesti%C3%B3n+y+usuarios',
+        publicId: 'placehold-operativo-vista2',
+      },
     ],
     activo: true,
   },

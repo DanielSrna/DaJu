@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, X, ImagePlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EditorTexto } from "@/components/editor/editor-texto";
 import { api } from "@/lib/api/cliente";
 import type { Paquete, PaqueteInput } from "@/lib/api/tipos";
 
@@ -262,17 +263,31 @@ export function FormularioProducto() {
           Publicado en la vitrina
         </label>
 
-        <label className="block text-sm font-medium sm:col-span-2">
-          Descripción
-          <textarea
-            required
-            aria-label="Descripción"
-            rows={4}
+        <div className="sm:col-span-2">
+          <span className="text-sm font-medium">Descripción</span>
+          <EditorTexto
+            ariaLabel="Descripción"
             value={form.descripcion}
-            onChange={(e) => set("descripcion", e.target.value)}
-            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-acento)]"
+            onChange={(html) => set("descripcion", html)}
+            rows={6}
           />
-        </label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Puedes usar títulos (H2/H3), negrita, cursiva y 3 tamaños seleccionando el texto.
+          </p>
+        </div>
+
+        <div className="sm:col-span-2">
+          <span className="text-sm font-medium">Garantía</span>
+          <EditorTexto
+            ariaLabel="Garantía"
+            value={form.garantia}
+            onChange={(html) => set("garantia", html)}
+            rows={5}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Texto de la garantía del producto. Misma edición: títulos, negrita, cursiva y tamaños.
+          </p>
+        </div>
 
         <label className="block text-sm font-medium sm:col-span-2">
           Características (una por línea)

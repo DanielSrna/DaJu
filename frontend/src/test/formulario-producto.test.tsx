@@ -38,7 +38,10 @@ describe("Formulario de producto", () => {
     // Llenar mínimos
     await waitFor(() => fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Nuevo Paquete" } }));
     fireEvent.blur(screen.getByLabelText("Nombre"));
-    fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción de prueba de más de 10 caracteres" } });
+    // El editor enriquecido es contentEditable: setea el contenido y dispara input
+    const descripcion = screen.getByRole("textbox", { name: "Descripción" });
+    descripcion.innerHTML = "Descripción de prueba de más de 10 caracteres";
+    fireEvent.input(descripcion);
     fireEvent.change(screen.getByLabelText("Precio"), { target: { value: "150" } });
 
     fireEvent.click(screen.getByRole("button", { name: /crear producto/i }));

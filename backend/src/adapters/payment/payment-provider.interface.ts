@@ -23,4 +23,6 @@ export interface PaymentProvider {
     paymentId: string;
     status: PaymentResult["status"];
   }>;
+  /** Reembolso (opcional por pasarela; lanza error si no lo soporta). */
+  refund?(paymentId: string): Promise<void>;
 }

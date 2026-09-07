@@ -10,6 +10,7 @@ import {
   notificacionesService,
 } from "./notificaciones.service";
 import { logger } from "../config/logger";
+import { bitacoraService } from "./bitacora.service";
 
 /** Datos mínimos del pago que necesita el proyecto (desacoplado de Mongoose). */
 export interface CompraPago {
@@ -310,6 +311,12 @@ export class ProyectoService {
     logger.exito("ProyectoService.cambiarEstado completado", {
       id,
       nuevoEstado,
+    });
+    void bitacoraService.registrar({
+      proyectoId: id,
+      tipo: "estado",
+      mensaje: `Proyecto movido a "${nuevoEstado}"`,
+      creadaPor: rol === "admin" ? clienteId : null,
     });
     return toJson(doc.toObject() as Record<string, unknown>);
   }

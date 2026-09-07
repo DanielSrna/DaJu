@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { LogIn, ExternalLink, Pencil, Hammer, Menu, X } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { LogIn, ExternalLink, Pencil, Hammer, LogOut, Menu, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTema } from "@/lib/tema";
 import { useModoEdicion } from "@/lib/modo-edicion";
+import { api } from "@/lib/api/cliente";
 
 const ENLACES = [
   { nombre: "Inicio", ruta: "/" },
@@ -15,43 +16,81 @@ const ENLACES = [
 ];
 
 /** Barra superior: zona de acceso a la plataforma, separada de la vitrina.
- *  Con admin logueado se vuelve "modo diseñador": Edición (activa) y Desarrollo. */
+ *  Con admin logueado se vuelve "modo diseñador": Edición (activa) y Desarrollo.
+ *  Cualquier usuario autenticado tiene aquí su botón de cerrar sesión. */
 export function TopBar() {
-  const { modoEdicion } = useModoEdicion();
+  const { modoEdicion, usuario, recargar } = useModoEdicion();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [cerrando, setCerrando] = useState(false);
+  const planetaPortal = pathname.startsWith("/cliente");
+
+  const cerrarSesion = async (): Promise<void> => {
+    setCerrando(true);
+    try {
+      await api.logout();
+      await recargar();
+      navigate("/");
+    } catch {
+      await recargar();
+    } finally {
+      setCerrando(false);
+    }
+  };
 
   return (
     <div className="bg-[var(--brand-primario)] text-white">
       <div className="mx-auto flex h-8 max-w-6xl items-center justify-end gap-2 px-4 text-xs">
-        {modoEdicion ? (
+        {usuario ? (
           <>
             <span className="hidden font-semibold text-white/90 sm:inline">
-              Bienvenido Administrador
+              {modoEdicion ? "Bienvenido Administrador" : `Hola, ${usuario.nombre}`}
             </span>
-            <div className="flex gap-1">
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                aria-current="page"
-                className="h-6 gap-1 bg-white/15 text-white hover:bg-white/25 hover:text-white"
-              >
-                <Link to="/">
-                  <Pencil className="size-3" />
-                  Edición
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className="h-6 gap-1 text-white/90 hover:bg-white/10 hover:text-white"
-              >
-                <Link to="/admin">
-                  <Hammer className="size-3" />
-                  Desarrollo
-                </Link>
-              </Button>
-            </div>
+            {modoEdicion && (
+              <div className="flex gap-1">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  aria-current="page"
+                  className="h-6 gap-1 bg-white/15 text-white hover:bg-white/25 hover:text-white"
+                >
+                  <Link to="/">
+                    <Pencil className="size-3" />
+                    Edición
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  aria-current={planetaPortal ? "page" : undefined}
+                  className={`h-6 gap-1 text-white/90 hover:bg-white/10 hover:text-white ${
+                    planetaPortal ? "bg-white/15" : ""
+                  }`}
+                >
+                  <Link to="/cliente">
+                    <Hammer className="size-3" />
+                    Desarrollo
+                  </Link>
+                </Button>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={cerrando}
+              onClick={() => void cerrarSesion()}
+              aria-label="Cerrar sesión"
+              className="h-6 gap-1 text-white/90 hover:bg-white/10 hover:text-white"
+            >
+              {cerrando ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <LogOut className="size-3" />
+              )}
+              <span className="hidden sm:inline">Cerrar sesión</span>
+            </Button>
           </>
         ) : (
           <>

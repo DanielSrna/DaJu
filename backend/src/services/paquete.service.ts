@@ -247,6 +247,7 @@ interface PaqueteDocumentJson {
   slug: string;
   tipo: string;
   descripcion: string;
+  garantia: string;
   precio: number;
   moneda: string;
   vistasIncluidas: number;
@@ -266,6 +267,7 @@ function toJson(doc: Record<string, unknown>): PaqueteDocumentJson {
     slug: String(doc.slug),
     tipo: String(doc.tipo),
     descripcion: String(doc.descripcion),
+    garantia: String(doc.garantia ?? ""),
     precio: Number(doc.precio),
     moneda: String(doc.moneda ?? "USD"),
     vistasIncluidas: Number(doc.vistasIncluidas),

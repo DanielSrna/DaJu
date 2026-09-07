@@ -55,6 +55,7 @@ export interface Paquete {
   slug: string;
   tipo: "validor" | "corporativo" | "operativo";
   descripcion: string;
+  garantia: string;
   precio: number;
   moneda: string;
   vistasIncluidas: number;
@@ -73,6 +74,7 @@ export interface PaqueteInput {
   slug: string;
   tipo: "validor" | "corporativo" | "operativo";
   descripcion: string;
+  garantia: string;
   precio: number;
   moneda: string;
   vistasIncluidas: number;
@@ -85,6 +87,241 @@ export interface PaqueteInput {
 
 /** Paquete con imagen de portada (para el listado admin). */
 export type PaqueteAdmin = Paquete;
+
+export interface Plantilla {
+  id: string;
+  nombre: string;
+  slug: string;
+  plataforma: string;
+  descripcion: string;
+  precio: number;
+  moneda: string;
+  vistasIncluidas: number;
+  soporteMeses: number;
+  diasEntrega: number;
+  features: string[];
+  imagen: { url: string; publicId: string } | null;
+  galeria: Array<{ url: string; publicId: string }>;
+  detalles: Array<{ titulo: string; texto: string }>;
+  activo: boolean;
+}
+
+/** Cuerpo para crear/actualizar una plantilla (contrato POST/PUT de la API). */
+export interface PlantillaInput {
+  nombre: string;
+  slug: string;
+  plataforma: string;
+  descripcion: string;
+  precio: number;
+  moneda: string;
+  vistasIncluidas: number;
+  soporteMeses: number;
+  diasEntrega: number;
+  features?: string[];
+  detalles?: Array<{ titulo: string; texto: string }>;
+  activo?: boolean;
+}
+
+export type CategoriaServicio = "auditoria" | "asesoria" | "aceleracion";
+
+export interface Servicio {
+  id: string;
+  nombre: string;
+  slug: string;
+  categoria: CategoriaServicio;
+  descripcion: string;
+  precio: number;
+  moneda: string;
+  duracionMin: number;
+  canal: "Meet" | "Zoom";
+  incluye: string[];
+  detalles: Array<{ titulo: string; texto: string }>;
+  activo: boolean;
+}
+
+/** Cuerpo para crear/actualizar un servicio (contrato POST/PUT de la API). */
+export interface ServicioInput {
+  nombre: string;
+  slug: string;
+  categoria: CategoriaServicio;
+  descripcion: string;
+  precio: number;
+  moneda: string;
+  duracionMin?: number;
+  canal?: "Meet" | "Zoom";
+  incluye?: string[];
+  detalles?: Array<{ titulo: string; texto: string }>;
+  activo?: boolean;
+}
+
+/** Familia comprada; define el entorno de acceso (contrato de pagos). */
+export type TipoProducto = "paquete" | "plantilla" | "servicio";
+
+/** Resumen del portal del cliente (GET /cliente/resumen). */
+export interface ResumenPortal {
+  proyectos: Array<{
+    id: string;
+    nombre: string;
+    slug: string;
+    estado: string;
+    fechaEntrega: string | null;
+    progreso: number;
+    /** Presente cuando el resumen es de administrador (todos los clientes). */
+    clienteNombre?: string;
+    clienteId?: string;
+  }>;
+  espacios: Array<{
+    id: string;
+    tipoProducto: "plantilla" | "servicio";
+    productoSlug: string;
+    sesiones: { total: number; usadas: number };
+    estado: "activo" | "completado";
+    clienteNombre?: string;
+    clienteId?: string;
+  }>;
+  pagos: Array<{
+    id: string;
+    tipoProducto: TipoProducto;
+    productoSlug: string;
+    monto: number;
+    moneda: string;
+    cantidad: number;
+    createdAt: string;
+  }>;
+}
+
+/** Chat del portal (contexto: proyecto | espacio | vista). */
+export interface MensajeChat {
+  id: string;
+  contexto: "proyecto" | "espacio" | "vista";
+  contextoId: string;
+  autorTipo: "admin" | "cliente";
+  autorId: string;
+  cuerpo: string;
+  archivos: Array<{ url: string; publicId: string; nombre: string; mime: string }>;
+  createdAt: string;
+}
+
+export interface EspacioPortal {
+  id: string;
+  clienteId: string;
+  tipoProducto: "plantilla" | "servicio";
+  productoSlug: string;
+  pagoId: string;
+  estado: "activo" | "completado";
+  sesiones: { total: number; usadas: number };
+}
+
+export interface CitaPortal {
+  id: string;
+  espacioId: string;
+  sesion: number;
+  propuestas: string[];
+  confirmada: string | null;
+  duracionMin: number;
+  canal: "Meet" | "Zoom";
+  estado: "propuesta" | "confirmada" | "realizada" | "cancelada";
+  linkVideollamada: string;
+  notas: string;
+  createdAt: string;
+}
+
+export interface VistaDisenoPortal {
+  id: string;
+  espacioId: string;
+  nombre: string;
+  orden: number;
+  estado: "pendiente" | "negociacion" | "cotizacion" | "aprobada";
+  muestraCliente: { url: string; publicId: string } | null;
+  obraGris: { url: string; publicId: string } | null;
+  archivos: Array<{
+    url: string;
+    publicId: string;
+    nombre: string;
+    mimeType: string;
+    tamañoBytes: number;
+  }>;
+  createdAt: string;
+}
+
+export interface SolicitudFuncion {
+  id: string;
+  espacioId: string;
+  titulo: string;
+  descripcion: string;
+  estado: "abierta" | "respondida" | "aceptada" | "pagada";
+  costo: number;
+  respuestaAdmin: string;
+  createdAt: string;
+}
+
+export interface Notificacion {
+  id: string;
+  tipo: "plataforma" | "proyecto";
+  paraAdmin: boolean;
+  titulo: string;
+  cuerpo: string;
+  contexto: string;
+  contextoId: string | null;
+  leida: boolean;
+  createdAt: string;
+}
+
+/** Briefing v2 (contenido guiado por vistas y semáforos). */
+export interface PreferenciaIdentidad {
+  tipo: "lista" | "libre" | "dev";
+  valor: string;
+  notas: string;
+}
+
+export interface VistaBriefingPortal {
+  id: string;
+  nombre: string;
+  requisitos: string;
+  semaforo: "pendiente" | "negociacion" | "cotizacion" | "aprobada";
+  obraGris?: { url: string; publicId: string } | null;
+  archivos?: Array<{
+    url: string;
+    publicId: string;
+    nombre: string;
+    mimeType: string;
+    tamañoBytes: number;
+  }>;
+}
+
+export interface BriefingV2Contenido {
+  empresa?: string;
+  descripcionNegocio?: string;
+  objetivos?: string;
+  requerimientos?: string;
+  resumen?: {
+    nombreProyecto?: string;
+    descripcionNegocio?: string;
+    objetivos?: string;
+    problemaActual?: string;
+    flujoPrincipal?: string;
+    ejemploFlujo?: string;
+    plazoDeseado?: string;
+    noIncluir?: string;
+    referenciasLinks?: string;
+    identidadActual?: string;
+    idioma?: string;
+    usuarios?: { cantidad?: number; tipos?: string[]; permisos?: string[] };
+  };
+  vistas?: VistaBriefingPortal[];
+  identidad?: {
+    fuentes?: PreferenciaIdentidad;
+    colores?: PreferenciaIdentidad;
+    vibra?: PreferenciaIdentidad;
+  };
+}
+
+export interface BriefingV2 {
+  id: string;
+  proyectoId: string;
+  contenido: BriefingV2Contenido;
+  completado: boolean;
+}
 
 /** Oferta de la vitrina: plantilla o consultoría (servicio). */
 export interface Oferta {
@@ -130,6 +367,9 @@ export interface CheckoutResultado {
   urlPago: string | null;
   pago: {
     id: string;
+    tipoProducto: TipoProducto;
+    productoSlug: string;
+    cantidad: number;
     monto: number;
     moneda: string;
     estado: string;

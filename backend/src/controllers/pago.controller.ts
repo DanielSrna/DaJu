@@ -11,7 +11,10 @@ export class PagoController {
     logger.proceso("PagoController.crearCheckout");
     try {
       const {
+        tipoProducto,
         paqueteId,
+        productoId,
+        cantidad,
         email,
         nombre,
         password,
@@ -19,13 +22,27 @@ export class PagoController {
         negociarDespues,
       } = req.body;
       const params: {
-        paqueteId: string;
+        tipoProducto?: "paquete" | "plantilla" | "servicio";
+        paqueteId?: string;
+        productoId?: string;
+        cantidad?: number;
         email: string;
         nombre?: string;
         password?: string;
         funcionalidades?: string[];
         negociarDespues?: boolean;
-      } = { paqueteId, email };
+      } = { email };
+      if (
+        typeof tipoProducto === "string" &&
+        ["paquete", "plantilla", "servicio"].includes(tipoProducto)
+      ) {
+        params.tipoProducto = tipoProducto as NonNullable<
+          typeof params.tipoProducto
+        >;
+      }
+      if (typeof paqueteId === "string") params.paqueteId = paqueteId;
+      if (typeof productoId === "string") params.productoId = productoId;
+      if (typeof cantidad === "number") params.cantidad = cantidad;
       if (typeof nombre === "string") params.nombre = nombre;
       if (typeof password === "string") params.password = password;
       if (Array.isArray(funcionalidades))
@@ -55,6 +72,48 @@ export class PagoController {
       });
       // ePayco espera "ok" en el body para no reintentar el envío.
       res.status(200).send("ok");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** Webhook de MercadoPago: JSON + firmas en headers (IPN v1). */
+  async procesarWebhookMercadoPago(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("PagoController.procesarWebhookMercadoPago", {
+      requestId: req.requestId,
+    });
+    try {
+      const entry = {
+        ...(req.body as Record<string, unknown>),
+        ...(req.query as Record<string, unknown>),
+        headers: {
+          "x-request-id": req.header("x-request-id") ?? "",
+          "x-manifest": req.header("x-manifest") ?? "",
+          "x-signature": req.header("x-signature") ?? "",
+        },
+      };
+      const resultado = await pagoService.procesarWebhook(entry);
+      logger.exito("PagoController.procesarWebhookMercadoPago completado", {
+        estado: resultado.estado,
+      });
+      res.status(200).json({ ok: true, estado: resultado.estado });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async refundar(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const pago = await pagoService.refundar(req.params.id, req.user!.id);
+      res.status(200).json({ pago });
     } catch (error) {
       next(error);
     }
