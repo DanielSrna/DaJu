@@ -103,6 +103,7 @@ export class MercadoPagoPaymentProvider implements PaymentProvider {
     eventType: string;
     paymentId: string;
     status: PaymentResult["status"];
+    externalReference?: string;
   }> {
     logger.proceso("MercadoPagoPaymentProvider.handleWebhook");
 
@@ -169,6 +170,7 @@ export class MercadoPagoPaymentProvider implements PaymentProvider {
       eventType: `payment.${estado || "unknown"}`,
       paymentId: paymentId || nroOperacion,
       status,
+      ...(nroOperacion ? { externalReference: nroOperacion } : {}),
     };
   }
 }

@@ -109,6 +109,7 @@ export class EpaycoPaymentProvider implements PaymentProvider {
     eventType: string;
     paymentId: string;
     status: PaymentResult["status"];
+    externalReference?: string;
   }> {
     const payload = body as EpaycoWebhookPayload;
 

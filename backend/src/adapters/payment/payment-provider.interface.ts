@@ -22,6 +22,8 @@ export interface PaymentProvider {
     eventType: string;
     paymentId: string;
     status: PaymentResult["status"];
+    /** Referencia del vendedor (pagoId nuestro) si la pasarela la devuelve. */
+    externalReference?: string;
   }>;
   /** Reembolso (opcional por pasarela; lanza error si no lo soporta). */
   refund?(paymentId: string): Promise<void>;

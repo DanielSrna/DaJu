@@ -502,12 +502,22 @@ export class PagoService {
       throw ApiError.badRequest("Webhook sin referencia de pago");
     }
 
-    const pago = await PagoModel.findOne({ referencia: evento.paymentId });
+    let pago = await PagoModel.findOne({ referencia: evento.paymentId });
+    if (!pago && evento.externalReference) {
+      // MercadoPago envía el id del PAGO (no la preferencia); su
+      // external_reference contiene NUESTRO pagoId → lo resolvemos aquí.
+      pago = await PagoModel.findOne({ _id: evento.externalReference });
+      if (pago) {
+        pago.referencia = evento.paymentId;
+        await pago.save();
+      }
+    }
     if (!pago) {
       // Respondemos ok igual (no dejar que ePayco reintente infinitamente),
       // pero registramos el fracaso para auditoría.
       logger.fracaso("PagoService.procesarWebhook: pago no encontrado", {
         referencia: evento.paymentId,
+        externalReference: evento.externalReference,
       });
       return { estado: "pending" };
     }

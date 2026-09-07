@@ -33,6 +33,7 @@ export class FakePaymentProvider implements PaymentProvider {
     eventType: string;
     paymentId: string;
     status: PaymentResult["status"];
+    externalReference?: string;
   }> {
     const payload = body as Record<string, string | undefined>;
 
