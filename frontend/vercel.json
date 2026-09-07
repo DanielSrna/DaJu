@@ -10,6 +10,10 @@
     {
       "source": "/api-docs/:path*",
       "destination": "https://mainplataform-api.onrender.com/api-docs/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
