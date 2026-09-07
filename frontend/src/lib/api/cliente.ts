@@ -27,7 +27,8 @@ import type {
   ApiError,
 } from "./tipos";
 
-const BASE = "/api/v1";
+/** Base de la API: absoluta (VITE_API_URL) en producción cross-site, relativa en dev. */
+const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api/v1";
 
 async function peticion<T>(url: string, opciones?: RequestInit): Promise<T> {
   const esJson = typeof opciones?.body === "string";
