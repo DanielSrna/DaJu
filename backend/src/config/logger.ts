@@ -8,6 +8,9 @@ export const LOG_LEVELS = {
   fracaso: 2,
 } as const;
 
+/** Directorio de logs (en contenedores usar una ruta escribible, ej. /tmp/logs). */
+const LOG_DIR = process.env.LOG_DIR ?? "logs";
+
 const logFormat = printf(({ level, message, timestamp, ...meta }) => {
   const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : "";
   return `${timestamp} [${level.toUpperCase()}] ${message}${metaStr}`;
@@ -24,7 +27,7 @@ export const logger = winston.createLogger({
     ...(process.env.NODE_ENV !== "test"
       ? [
           new winston.transports.File({
-            filename: "logs/error.log",
+            filename: `${LOG_DIR}/error.log`,
             level: "fracaso",
             maxsize: 5 * 1024 * 1024,
           }),

@@ -24,3 +24,5 @@ USER node
 EXPOSE 4000
 
 CMD ["node", "dist/server.js"]
+
+ENV LOG_DIR=/tmp/logs
