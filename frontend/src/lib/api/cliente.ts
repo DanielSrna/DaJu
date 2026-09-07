@@ -28,11 +28,17 @@ import type {
 } from "./tipos";
 
 /** Base de la API: absoluta (VITE_API_URL) en producción cross-site, relativa en dev. */
-const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api/v1";
+export const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined) ?? "/api/v1";
+
+/** Arma una ruta absoluta/relativa según la configuración (uso externo al cliente). */
+export function apiUrl(ruta: string): string {
+  return `${API_BASE}${ruta}`;
+}
 
 async function peticion<T>(url: string, opciones?: RequestInit): Promise<T> {
   const esJson = typeof opciones?.body === "string";
-  const res = await fetch(`${BASE}${url}`, {
+  const res = await fetch(`${API_BASE}${url}`, {
     credentials: "include",
     headers: esJson
       ? { "Content-Type": "application/json" }

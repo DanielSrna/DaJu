@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { apiUrl } from "@/lib/api/cliente";
 
 interface Usuario {
   id: string;
@@ -39,7 +40,7 @@ export function ModoEdicionProvider({ children }: { children: ReactNode }) {
 
   const recargar = async (): Promise<void> => {
     try {
-      const res = await fetch("/api/v1/auth/me", {
+      const res = await fetch(apiUrl("/auth/me"), {
         credentials: "include",
         headers: { Accept: "application/json" },
       });
