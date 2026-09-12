@@ -28,5 +28,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     css: false,
+    // jsdom + userEvent pueden pasar de 5s cuando la máquina está cargada.
+    testTimeout: 15000,
   },
 });

@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ApiError } from "../utils/ApiError";
 import { logger } from "../config/logger";
 import { AuthUser } from "../types/express";
+import { UserModel } from "../models/user.model";
 import { COOKIE_NAMES, verifyAccessToken, JwtPayload } from "../utils/jwt";
 
 export function authMiddleware(
@@ -63,4 +64,43 @@ export function requireRol(...roles: Array<"admin" | "cliente">) {
     }
     next();
   };
+}
+
+/**
+ * Exige email verificado para operar en el entorno del cliente.
+ * Los admins quedan exentos (su cuenta se crea verificada).
+ */
+export async function requireEmailVerificado(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> {
+  if (!req.user) {
+    next(ApiError.unauthorized());
+    return;
+  }
+  if (req.user.rol === "admin") {
+    next();
+    return;
+  }
+  try {
+    const usuario = await UserModel.findById(req.user.id)
+      .select("emailVerificado")
+      .lean();
+    if (!usuario) {
+      next(ApiError.unauthorized());
+      return;
+    }
+    if (!usuario.emailVerificado) {
+      logger.fracaso("Acceso denegado: email sin verificar", {
+        requestId: req.requestId,
+        userId: req.user.id,
+      });
+      next(ApiError.emailNoVerificado());
+      return;
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
 }

@@ -2,7 +2,9 @@ import { ProyectoModel, Proyecto } from "../models/proyecto.model";
 import { PaqueteModel } from "../models/paquete.model";
 import { UserModel } from "../models/user.model";
 import { PagoModel } from "../models/pago.model";
+import { Types } from "mongoose";
 import { addBusinessDays } from "../utils/fechas";
+import { resumenEtapas } from "../models/etapa.schema";
 import { ApiError } from "../utils/ApiError";
 import { capacidadService } from "./capacidad.service";
 import {
@@ -28,10 +30,29 @@ export interface CompraPago {
 }
 
 const SIGUIENTE_ESTADO: Record<string, string> = {
+  planeacion: "recibido",
   recibido: "diseno",
   diseno: "desarrollo",
-  desarrollo: "entregado",
+  desarrollo: "despliegue",
+  despliegue: "entregado",
 };
+
+/** Transiciones alternas permitidas (flujo corto o reactivación). */
+const TRANSICIONES_EXTRA: Record<string, string[]> = {
+  desarrollo: ["entregado"],
+  pausado: ["planeacion", "recibido"],
+};
+
+const ESTADOS_VALIDOS = [
+  "planeacion",
+  "recibido",
+  "diseno",
+  "desarrollo",
+  "despliegue",
+  "entregado",
+  "pausado",
+  "cancelado",
+];
 
 interface FiltrosAdmin {
   estado?: string;
@@ -46,9 +67,16 @@ interface ProyectoJson {
   cliente: { id: string; email: string; nombre: string };
   paquete: Proyecto["paquete"];
   estado: Proyecto["estado"];
-  fechaCompra: Date;
-  fechaEntrega: Date;
+  fechaCompra: Date | null;
+  fechaEntrega: Date | null;
   fechaEntregado: Date | null;
+  precioBase: number;
+  moneda: string;
+  etapas: Proyecto["etapas"];
+  etapasCompletadas: number;
+  etapasTotal: number;
+  montoPagado: number;
+  montoTotal: number;
   funcionalidades: Array<{
     id: string;
     nombre: string;
@@ -137,6 +165,78 @@ export class ProyectoService {
       funcionalidades: funcionalidades.length,
     });
     return doc.toObject() as unknown as Proyecto & { _id: unknown };
+  }
+
+  /**
+   * Marca una etapa del plan como pagada y la desbloquea (idempotente).
+   */
+  async marcarEtapaPagada(
+    proyectoId: string,
+    etapaId: string,
+    pagoId: Types.ObjectId,
+  ): Promise<void> {
+    logger.proceso("ProyectoService.marcarEtapaPagada", {
+      proyectoId,
+      etapaId,
+    });
+    const proyecto = await ProyectoModel.findById(proyectoId);
+    if (!proyecto) throw ApiError.notFound("Proyecto no encontrado");
+    const etapas = proyecto.etapas as unknown as Array<{
+      _id: unknown;
+      estado: string;
+      pagoEstado: string;
+      pagoId?: Types.ObjectId | null;
+    }>;
+    const etapa = etapas.find((e) => String(e._id) === etapaId);
+    if (!etapa) throw ApiError.notFound("Etapa no encontrada");
+    etapa.pagoEstado = "pagado";
+    etapa.pagoId = pagoId;
+    if (etapa.estado === "bloqueada") etapa.estado = "en_curso";
+    proyecto.markModified("etapas");
+    await proyecto.save();
+    logger.exito("ProyectoService.marcarEtapaPagada completado", {
+      proyectoId,
+      etapaId,
+    });
+  }
+
+  /**
+   * Arranca el reloj del proyecto con el primer pago confirmado:
+   * congela fechaCompra y fechaEntrega (días hábiles del gestor de capacidad).
+   * Idempotente: si ya tiene fechaCompra, no hace nada.
+   */
+  async iniciarDesdePago(
+    proyectoId: string,
+    pagoId: Types.ObjectId,
+  ): Promise<void> {
+    logger.proceso("ProyectoService.iniciarDesdePago", { proyectoId });
+    const proyecto = await ProyectoModel.findById(proyectoId);
+    if (!proyecto) throw ApiError.notFound("Proyecto no encontrado");
+    if (proyecto.fechaCompra) {
+      logger.exito("ProyectoService.iniciarDesdePago: ya iniciado", {
+        proyectoId,
+      });
+      return;
+    }
+    const paquete = proyecto.paquete;
+    if (!paquete) {
+      throw ApiError.internal("El proyecto no tiene información del paquete");
+    }
+    const diasEfectivos = await capacidadService.getDiasEfectivos(
+      paquete.tipo,
+      paquete.diasEntrega,
+    );
+    const fechaCompra = new Date();
+    proyecto.set("pagoId", pagoId);
+    proyecto.fechaCompra = fechaCompra;
+    proyecto.fechaEntrega = addBusinessDays(fechaCompra, diasEfectivos);
+    if (proyecto.estado === "planeacion") proyecto.estado = "recibido";
+    await proyecto.save();
+    logger.exito("ProyectoService.iniciarDesdePago completado", {
+      proyectoId,
+      fechaEntrega: proyecto.fechaEntrega.toISOString(),
+      diasEfectivos,
+    });
   }
 
   async listarMios(clienteId: string): Promise<ProyectoJson[]> {
@@ -230,6 +330,7 @@ export class ProyectoService {
     nuevoEstado: string,
     rol: "admin" | "cliente",
     clienteId: string,
+    forzar = false,
   ): Promise<ProyectoJson> {
     logger.proceso("ProyectoService.cambiarEstado", { id, nuevoEstado });
 
@@ -252,21 +353,62 @@ export class ProyectoService {
       throw ApiError.forbidden("No tienes acceso a este proyecto");
     }
 
-    const estados = ["recibido", "diseno", "desarrollo", "entregado"];
-    if (!estados.includes(nuevoEstado)) {
+    if (!ESTADOS_VALIDOS.includes(nuevoEstado)) {
       throw ApiError.validation(`Estado inválido: ${nuevoEstado}`);
     }
 
-    const esperado = SIGUIENTE_ESTADO[doc.estado];
-    if (esperado !== nuevoEstado) {
-      logger.fracaso("ProyectoService.cambiarEstado: transición inválida", {
-        id,
-        actual: doc.estado,
-        solicitado: nuevoEstado,
-      });
-      throw ApiError.validation(
-        `Transición inválida: de "${doc.estado}" solo se puede pasar a "${esperado}"`,
+    const terminal = doc.estado === "entregado" || doc.estado === "cancelado";
+    if (nuevoEstado === "pausado" || nuevoEstado === "cancelado") {
+      if (terminal) {
+        throw ApiError.validation(
+          `No se puede pasar a "${nuevoEstado}" desde "${doc.estado}"`,
+        );
+      }
+    } else if (doc.estado === "pausado") {
+      const reanudar = doc.fechaCompra ? "recibido" : "planeacion";
+      if (nuevoEstado !== reanudar) {
+        throw ApiError.validation(
+          `Un proyecto pausado solo puede reanudarse a "${reanudar}"`,
+        );
+      }
+    } else {
+      const esperado = SIGUIENTE_ESTADO[doc.estado];
+      const extra = TRANSICIONES_EXTRA[doc.estado] ?? [];
+      if (nuevoEstado !== esperado && !extra.includes(nuevoEstado)) {
+        logger.fracaso("ProyectoService.cambiarEstado: transición inválida", {
+          id,
+          actual: doc.estado,
+          solicitado: nuevoEstado,
+        });
+        throw ApiError.validation(
+          `Transición inválida: de "${doc.estado}" solo se puede pasar a "${esperado}"`,
+        );
+      }
+    }
+
+    // La entrega exige que no queden etapas con cobro pendiente.
+    let etapasPendientes = 0;
+    if (nuevoEstado === "entregado") {
+      const etapas = (doc.etapas ?? []) as unknown as Array<{
+        requierePago: boolean;
+        pagoEstado: string;
+        nombre: string;
+      }>;
+      const pendientes = etapas.filter(
+        (e) => e.requierePago && e.pagoEstado !== "pagado",
       );
+      etapasPendientes = pendientes.length;
+      if (pendientes.length > 0 && !forzar) {
+        logger.fracaso(
+          "ProyectoService.cambiarEstado: entrega con etapas sin pagar",
+          { id, pendientes: pendientes.length },
+        );
+        throw ApiError.paymentRequired(
+          `Hay ${pendientes.length} etapa(s) sin pagar (${pendientes
+            .map((e) => e.nombre)
+            .join(", ")}). Confirma los pagos o fuerza la entrega.`,
+        );
+      }
     }
 
     doc.estado = nuevoEstado as Proyecto["estado"];
@@ -275,6 +417,15 @@ export class ProyectoService {
       doc.fechaEntregado = new Date();
     }
     await doc.save();
+
+    if (nuevoEstado === "entregado" && forzar && etapasPendientes > 0) {
+      void bitacoraService.registrar({
+        proyectoId: id,
+        tipo: "estado",
+        mensaje: `Entrega forzada con ${etapasPendientes} etapa(s) sin pagar`,
+        creadaPor: rol === "admin" ? clienteId : null,
+      });
+    }
 
     // Gatillo de notificaciones: avisa al cliente del avance (Fase 6).
     const clienteInfo = doc.clienteId as {
@@ -303,7 +454,7 @@ export class ProyectoService {
           clienteNombre,
           proyectoNombre: paqueteSnapshot.nombre,
           estado: nuevoEstado,
-          fechaEntrega: doc.fechaEntrega,
+          ...(doc.fechaEntrega ? { fechaEntrega: doc.fechaEntrega } : {}),
         });
       }
     }
@@ -400,11 +551,17 @@ function toJson(doc: Record<string, unknown>): ProyectoJson {
     cliente,
     paquete: p ?? ({} as Proyecto["paquete"]),
     estado,
-    fechaCompra: new Date(doc.fechaCompra as string),
-    fechaEntrega: new Date(doc.fechaEntrega as string),
+    fechaCompra: doc.fechaCompra ? new Date(doc.fechaCompra as string) : null,
+    fechaEntrega: doc.fechaEntrega
+      ? new Date(doc.fechaEntrega as string)
+      : null,
     fechaEntregado: doc.fechaEntregado
       ? new Date(doc.fechaEntregado as string)
       : null,
+    precioBase: Number(doc.precioBase ?? 0),
+    moneda: String(doc.moneda ?? "USD"),
+    etapas: (doc.etapas as ProyectoJson["etapas"]) ?? [],
+    ...resumenEtapas((doc.etapas as Proyecto["etapas"]) ?? []),
     funcionalidades:
       (doc.funcionalidades as ProyectoJson["funcionalidades"]) ?? [],
     createdAt: new Date(doc.createdAt as string),

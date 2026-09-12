@@ -1,9 +1,14 @@
 import { Router } from "express";
 import { body, param } from "express-validator";
 import { espacioController } from "../../controllers/espacio.controller";
-import { authMiddleware, requireRol } from "../../middlewares/auth.middleware";
+import {
+  authMiddleware,
+  requireEmailVerificado,
+  requireRol,
+} from "../../middlewares/auth.middleware";
 import { validate } from "../../middlewares/validate.middleware";
 import { uploadArchivoMiddleware } from "../../middlewares/upload.middleware";
+import { montarRutasEtapas } from "./etapa.routes";
 
 const router = Router();
 
@@ -29,6 +34,7 @@ const router = Router();
 router.get(
   "/espacios/:id",
   authMiddleware,
+  requireEmailVerificado,
   param("id").isMongoId(),
   validate,
   espacioController.obtener.bind(espacioController),
@@ -142,6 +148,8 @@ router.post(
   authMiddleware,
   param("id").isMongoId(),
   body("nombre").isString().isLength({ min: 2, max: 100 }).trim(),
+  body("costoSugerido").optional().isFloat({ min: 0 }),
+  body("descripcion").optional().isString().isLength({ max: 500 }).trim(),
   validate,
   espacioController.crearVista.bind(espacioController),
 );
@@ -400,6 +408,9 @@ router.post(
   param("id").isMongoId(),
   body("titulo").isString().isLength({ min: 2, max: 100 }).trim(),
   body("descripcion").isString().isLength({ min: 5, max: 4000 }).trim(),
+  body("costoSugerido").optional().isFloat({ min: 0 }),
+  body("origen").optional().isIn(["personalizada", "catalogo"]),
+  body("catalogoClave").optional().isString().trim().isLength({ max: 120 }),
   validate,
   espacioController.crearSolicitud.bind(espacioController),
 );
@@ -478,5 +489,8 @@ router.post(
   validate,
   espacioController.aceptarSolicitud.bind(espacioController),
 );
+
+// Plan de etapas del espacio (plantilla o consultoría).
+montarRutasEtapas(router, "espacios", "espacio");
 
 export default router;

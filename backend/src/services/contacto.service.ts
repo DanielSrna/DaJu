@@ -65,13 +65,13 @@ export class ContactoService {
 
     await this.email.send({
       to: data.email,
-      subject: "Recibimos tu mensaje — MainPlataform",
+      subject: "Recibimos tu mensaje — DaJu Plataform",
       html: `
         <h2>¡Hola, ${escapeHtml(data.nombre)}!</h2>
         <p>Recibimos tu mensaje y te responderemos muy pronto.</p>
         <p>Te confirmamos que llegó correctamente:</p>
         <blockquote style="white-space: pre-wrap">${escapeHtml(data.mensaje)}</blockquote>
-        <p>— Equipo MainPlataform</p>
+        <p>— Equipo DaJu Plataform</p>
       `,
     });
     doc.acuseEnviado = true;

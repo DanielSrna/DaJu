@@ -74,7 +74,7 @@ export class CapacidadService {
     let actualizados = 0;
     for (const proyecto of proyectos) {
       const paquete = proyecto.paquete;
-      if (!paquete) continue;
+      if (!paquete || !proyecto.fechaCompra) continue;
       const efectivos = Math.max(
         1,
         paquete.diasEntrega + (config.ajustes?.[paquete.tipo] ?? 0),

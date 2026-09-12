@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarClock, Clock, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { NavEntorno } from "@/components/portal/nav-entorno";
 import { api } from "@/lib/api/cliente";
+import { useModoEdicion } from "@/lib/modo-edicion";
 import type { EspacioPortal } from "@/lib/api/tipos";
 
 /** Resumen del entorno de servicios/consultoría. */
@@ -11,6 +13,11 @@ export function EntornoServicio() {
   const { id } = useParams<{ id: string }>();
   const [espacio, setEspacio] = useState<EspacioPortal | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cantidad, setCantidad] = useState(1);
+  const [cobrando, setCobrando] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const { usuario } = useModoEdicion();
+  const esAdmin = usuario?.rol === "admin";
 
   const cargar = (): void => {
     if (!id) return;
@@ -86,6 +93,63 @@ export function EntornoServicio() {
           <p className="mt-1 text-sm text-muted-foreground">Contexto de tu consulta o material de referencia.</p>
         </Link>
       </div>
+
+      {esAdmin && id && (
+        <section className="mt-8 rounded-2xl border border-dashed p-5">
+          <h2 className="font-bold">Cobrar sesiones (admin)</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Habilita el pago de un bloque de sesiones; el cliente lo verá en su
+            portal de pagos y se activarán al confirmarlo.
+          </p>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium">Sesiones</span>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={cantidad}
+                onChange={(e) =>
+                  setCantidad(Math.max(1, Number(e.target.value)))
+                }
+                className="w-24"
+                aria-label="Cantidad de sesiones a cobrar"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Total: $
+              {((espacio.precioBase ?? 0) * cantidad).toLocaleString("es-CO")}{" "}
+              {espacio.moneda ?? "USD"}
+            </p>
+            <Button
+              variant="accent"
+              size="sm"
+              disabled={cobrando}
+              onClick={async () => {
+                setCobrando(true);
+                setAviso(null);
+                try {
+                  await api.solicitarPago({
+                    espacioId: id,
+                    tipoPago: "sesiones",
+                    monto: (espacio.precioBase ?? 0) * cantidad,
+                    cantidad,
+                    descripcion: `${cantidad} sesión(es) de consultoría`,
+                  });
+                  setAviso("Pago habilitado. El cliente ya puede pagarlo.");
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setCobrando(false);
+                }
+              }}
+            >
+              Solicitar pago
+            </Button>
+          </div>
+          {aviso && <p className="mt-2 text-xs text-green-700">{aviso}</p>}
+        </section>
+      )}
     </div>
   );
 }

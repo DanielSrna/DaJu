@@ -27,12 +27,18 @@ import { DetalleBlog } from "@/pages/vitrina/detalle-blog";
 import { NoEncontrada, Proximamente } from "@/pages/otros";
 import { Login } from "@/pages/portales/login";
 import { Recuperar, Restablecer } from "@/pages/portales/recuperar";
+import { Verificar } from "@/pages/portales/verificar";
 import { Pagos } from "@/pages/portales/pagos";
+import { Pagar } from "@/pages/portales/pagar";
+import { MuroVerificacion } from "@/components/portal/muro-verificacion";
 import { CentroProyectos } from "@/pages/admin/centro-proyectos";
+import { AdminPagos } from "@/pages/admin/pagos";
+import { AdminMetodosPago } from "@/pages/admin/metodos-pago";
 import { Portal } from "@/pages/portales/portal";
 import { Notificaciones } from "@/pages/portales/notificaciones";
 import { EntornoPaquete } from "@/pages/portales/entorno-paquete";
 import { EntornoPaqueteVistas } from "@/pages/portales/entorno-paquete-vistas";
+import { EntornoPaqueteFunciones } from "@/pages/portales/entorno-paquete-funciones";
 import { EntornoPaqueteChat } from "@/pages/portales/entorno-paquete-chat";
 import { PaginaVistaPaquete } from "@/components/portal/vista-paquete";
 import { EntornoPlantilla } from "@/pages/portales/entorno-plantilla";
@@ -42,6 +48,7 @@ import { PaginaVistaPlantilla } from "@/components/portal/vista-plantilla";
 import { EntornoServicio } from "@/pages/portales/entorno-servicio";
 import { EntornoServicioCitas, EntornoServicioChat } from "@/pages/portales/entorno-servicio-citas";
 import { Terminos, Privacidad } from "@/pages/legales";
+import { ContratoCondiciones, ContratoDatos } from "@/pages/contratos";
 import { ListaProductos } from "@/pages/admin/lista-productos";
 import { FormularioProducto } from "@/pages/admin/formulario-producto";
 import { ListaPlantillas } from "@/pages/admin/lista-plantillas";
@@ -76,7 +83,11 @@ function RequerirSesion({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  return usuario ? <>{children}</> : <Login />;
+  if (!usuario) return <Login />;
+  if (usuario.rol === "cliente" && usuario.emailVerificado === false) {
+    return <MuroVerificacion />;
+  }
+  return <>{children}</>;
 }
 
 /**
@@ -125,9 +136,15 @@ export function AppRoutes() {
               <Route path="/postventa" element={<Postventa />} />
               <Route path="/terminos" element={<Terminos />} />
               <Route path="/privacidad" element={<Privacidad />} />
+              <Route
+                path="/contratos/condiciones"
+                element={<ContratoCondiciones />}
+              />
+              <Route path="/contratos/datos" element={<ContratoDatos />} />
 
               {/* Portal del cliente (sesión requerida) */}
               <Route path="/cliente/login" element={<Login />} />
+              <Route path="/cliente/verificar" element={<Verificar />} />
               <Route path="/cliente/recuperar" element={<Recuperar />} />
               <Route path="/cliente/restablecer" element={<Restablecer />} />
               <Route
@@ -136,6 +153,30 @@ export function AppRoutes() {
                   <RequerirSesion>
                     <Pagos />
                   </RequerirSesion>
+                }
+              />
+              <Route
+                path="/cliente/pagar/:pagoId"
+                element={
+                  <RequerirSesion>
+                    <Pagar />
+                  </RequerirSesion>
+                }
+              />
+              <Route
+                path="/admin/pagos"
+                element={
+                  <RequerirAdmin>
+                    <AdminPagos />
+                  </RequerirAdmin>
+                }
+              />
+              <Route
+                path="/admin/metodos-pago"
+                element={
+                  <RequerirAdmin>
+                    <AdminMetodosPago />
+                  </RequerirAdmin>
                 }
               />
               <Route
@@ -175,6 +216,14 @@ export function AppRoutes() {
                 element={
                   <RequerirSesion>
                     <PaginaVistaPaquete />
+                  </RequerirSesion>
+                }
+              />
+              <Route
+                path="/cliente/paquetes/:id/funciones"
+                element={
+                  <RequerirSesion>
+                    <EntornoPaqueteFunciones />
                   </RequerirSesion>
                 }
               />

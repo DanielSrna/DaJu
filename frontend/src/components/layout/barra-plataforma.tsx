@@ -47,8 +47,8 @@ export function BarraPlataforma() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[var(--brand-primario)] text-white">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link
-          to="/"
-          aria-label="Volver a la vitrina"
+          to="/cliente"
+          aria-label="Ir al inicio de la plataforma"
           className="flex items-center gap-2 rounded-lg px-1 py-1 transition-opacity hover:opacity-85"
         >
           <span className="flex size-8 items-center justify-center rounded-lg bg-white text-lg font-black text-[var(--brand-primario)]">
@@ -56,7 +56,7 @@ export function BarraPlataforma() {
           </span>
           <span className="text-lg font-bold">DaJu</span>
           <span className="ml-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/60">
-            Plataforma
+            Plataform
           </span>
         </Link>
 

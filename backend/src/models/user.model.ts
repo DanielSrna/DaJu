@@ -21,6 +21,25 @@ const userSchema = new Schema(
       type: String,
       required: true,
       trim: true,
+      comment: "Nombre completo para mostrar (se arma con las partes)",
+    },
+    segundoNombre: { type: String, default: "", trim: true },
+    primerApellido: { type: String, default: "", trim: true },
+    segundoApellido: { type: String, default: "", trim: true },
+    fechaNacimiento: {
+      type: Date,
+      default: null,
+      comment: "Se exige mayoría de edad al registrarse",
+    },
+    aceptaCondiciones: {
+      type: { version: String, fecha: Date },
+      default: null,
+      comment: "Aceptación del contrato de condiciones del servicio",
+    },
+    aceptaDatos: {
+      type: { version: String, fecha: Date },
+      default: null,
+      comment: "Aceptación del contrato de manejo de datos personales",
     },
     rol: {
       type: String,
@@ -31,6 +50,15 @@ const userSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    emailVerificado: {
+      type: Boolean,
+      default: true,
+      index: true,
+      comment:
+        "Los registros nuevos nacen en false; las cuentas históricas quedan verificadas",
+    },
+    emailVerificacionToken: { type: String, default: "", select: false },
+    emailVerificacionExpira: { type: Date, default: null, select: false },
   },
   {
     timestamps: true,

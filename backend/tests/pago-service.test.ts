@@ -161,7 +161,7 @@ describe("PagoService (flujo completo con proveedor simulado)", () => {
       tipo: "operativo",
       diasEntrega: 30,
     });
-    expect(proyecto!.fechaEntrega.getTime()).toBeGreaterThan(proyecto!.fechaCompra.getTime());
+    expect(proyecto!.fechaEntrega!.getTime()).toBeGreaterThan(proyecto!.fechaCompra!.getTime());
   });
 
   it("webhook duplicado es idempotente (no duplica proyecto ni cliente)", async () => {

@@ -15,7 +15,7 @@ interface Props {
 }
 
 const POR_FAMILIA: Record<Props["familia"], TabEntorno[]> = {
-  paquete: ["resumen", "vistas", "chat"],
+  paquete: ["resumen", "vistas", "funciones", "chat"],
   plantilla: ["resumen", "vistas", "funciones", "chat"],
   servicio: ["resumen", "citas", "chat"],
 };

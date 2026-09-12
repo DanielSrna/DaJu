@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavEntorno } from "@/components/portal/nav-entorno";
 import { Semaforo } from "@/components/portal/semaforo";
+import { VistasSugeridas } from "@/components/portal/vistas-sugeridas";
 import { PanelChat } from "@/components/portal/panel-chat";
 import { api } from "@/lib/api/cliente";
 import type { VistaDisenoPortal } from "@/lib/api/tipos";
@@ -13,9 +14,14 @@ export function EntornoPlantillaVistas() {
   const { id } = useParams<{ id: string }>();
   const [vistas, setVistas] = useState<VistaDisenoPortal[] | null>(null);
 
-  useEffect(() => {
+  const cargar = (): void => {
     if (!id) return;
     api.vistasEspacio(id).then((r) => setVistas(r.vistas)).catch(() => setVistas([]));
+  };
+
+  useEffect(() => {
+    cargar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   return (
@@ -25,6 +31,15 @@ export function EntornoPlantillaVistas() {
       </Button>
       <h1 className="mt-3 text-2xl font-bold">Vistas</h1>
       <NavEntorno familia="plantilla" id={id ?? ""} activo="vistas" />
+
+      {id && (
+        <VistasSugeridas
+          familia="espacio"
+          id={id}
+          existentes={(vistas ?? []).map((v) => v.nombre)}
+          onCreada={cargar}
+        />
+      )}
 
       <div className="mt-6 space-y-3">
         {!vistas

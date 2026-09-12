@@ -38,6 +38,7 @@ interface EditorPatch {
   textos?: Record<string, string>;
   descuento?: Partial<DescuentoJson> & { porcentaje?: number };
   diasExtra?: number;
+  tasaCop?: number;
 }
 
 const DESCUENTO_DEFAULT = {
@@ -60,6 +61,7 @@ interface CmsConfigPublicEditor {
   textos: Record<string, string>;
   descuento: DescuentoJson;
   diasExtra: number;
+  tasaCop: number;
 }
 
 function plainTextos(textos: unknown): Record<string, string> {
@@ -95,6 +97,9 @@ function aplicarEditor(
   if (typeof e.diasExtra === "number") {
     config.diasExtra = e.diasExtra;
   }
+  if (typeof e.tasaCop === "number") {
+    config.tasaCop = e.tasaCop;
+  }
 }
 
 /**
@@ -123,6 +128,7 @@ export class CmsService {
       textos: plainTextos(config.textos),
       descuento: config.descuento ?? DESCUENTO_DEFAULT,
       diasExtra: config.diasExtra ?? 0,
+      tasaCop: config.tasaCop ?? 0,
     };
   }
 
@@ -138,6 +144,7 @@ export class CmsService {
         textos: plainTextos(c.textos),
         descuento: c.descuento ?? DESCUENTO_DEFAULT,
         diasExtra: c.diasExtra ?? 0,
+        tasaCop: c.tasaCop ?? 0,
       },
       editor: c.editor ?? {},
     };
@@ -176,6 +183,7 @@ export class CmsService {
         patch.descuento as Record<string, unknown>,
       );
     if (typeof patch.diasExtra === "number") editor.diasExtra = patch.diasExtra;
+    if (typeof patch.tasaCop === "number") editor.tasaCop = patch.tasaCop;
 
     c.editor = editor;
     await c.save();
@@ -200,6 +208,7 @@ export class CmsService {
       textos: plainTextos(c.textos),
       descuento: c.descuento ?? DESCUENTO_DEFAULT,
       diasExtra: c.diasExtra ?? 0,
+      tasaCop: c.tasaCop ?? 0,
     };
     aplicarEditor(publico, editor);
 
@@ -208,11 +217,22 @@ export class CmsService {
     c.textos = publico.textos as never;
     c.descuento = publico.descuento as never;
     c.diasExtra = publico.diasExtra;
+    c.tasaCop = publico.tasaCop;
     c.editor = {};
     await c.save();
 
     logger.exito("CmsService.publicarEditor completado");
     return { publicado: await this.obtenerPublico() };
+  }
+
+  /** Tasa USD→COP publicada al instante (ajuste operativo de pagos). */
+  async actualizarTasaCop(tasaCop: number): Promise<{ tasaCop: number }> {
+    logger.proceso("CmsService.actualizarTasaCop", { tasaCop });
+    const config = await this.getOrCreate();
+    config.tasaCop = tasaCop;
+    await config.save();
+    logger.exito("CmsService.actualizarTasaCop completado", { tasaCop });
+    return { tasaCop: config.tasaCop ?? 0 };
   }
 
   private aplicarDefaults(c: Partial<Colores> | null | undefined): Colores {

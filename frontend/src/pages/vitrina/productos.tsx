@@ -118,6 +118,10 @@ export function Productos() {
         Tres formas de trabajar con nosotros: paquetes de alcance cerrado,
         plantillas listas para desplegar y consultoría por sesiones.
       </p>
+      <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--brand-acento)]/40 bg-[var(--brand-acento)]/10 px-4 py-2 text-sm font-semibold text-[var(--brand-primario)]">
+        La fase de planeación y diseño es completamente gratis: cotiza, conversa
+        tu idea y paga cuando acordemos el desarrollo.
+      </p>
 
       {/* Accesos rápidos a cada familia */}
       <nav

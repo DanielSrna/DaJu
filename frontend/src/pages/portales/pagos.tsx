@@ -7,10 +7,14 @@ import type { PagoItem } from "@/lib/api/tipos";
 
 const ESTADO: Record<PagoItem["estado"], { texto: string; clase: string }> = {
   pending: { texto: "Pendiente", clase: "bg-amber-100 text-amber-700" },
+  en_revision: { texto: "En revisión", clase: "bg-blue-100 text-blue-700" },
   paid: { texto: "Pagado", clase: "bg-green-100 text-green-700" },
   failed: { texto: "Fallido", clase: "bg-red-100 text-red-700" },
+  rechazado: { texto: "Rechazado", clase: "bg-red-100 text-red-700" },
   refunded: { texto: "Reembolsado", clase: "bg-gray-200 text-gray-700" },
 };
+
+const PAGABLES: PagoItem["estado"][] = ["pending", "en_revision", "rechazado"];
 
 /** Historial de pagos. Cliente ve los suyos; admin los de todos (con reembolso). */
 export function Pagos() {
@@ -82,8 +86,10 @@ export function Pagos() {
                   <p className="text-xs text-muted-foreground">
                     {new Date(p.createdAt).toLocaleDateString("es-CO")} ·{" "}
                     {esAdmin && p.referencia ? `Ref: ${p.referencia.slice(0, 14)}… · ` : ""}
+                    {esAdmin && p.codigo ? `Código: ${p.codigo} · ` : ""}
                     {p.cantidad > 1 ? `${p.cantidad} sesiones · ` : ""}
                     ${p.monto} {p.moneda}
+                    {p.montoCop ? ` · $${p.montoCop.toLocaleString("es-CO")} COP` : ""}
                   </p>
                 </div>
               </div>
@@ -91,6 +97,26 @@ export function Pagos() {
                 <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ESTADO[p.estado].clase}`}>
                   {ESTADO[p.estado].texto}
                 </span>
+                {!esAdmin && PAGABLES.includes(p.estado) && (
+                  <Button
+                    variant="accent"
+                    size="sm"
+                    onClick={() =>
+                      (window.location.href = `/cliente/pagar/${p.id}`)
+                    }
+                  >
+                    {p.estado === "pending" ? "Pagar" : "Ver pago"}
+                  </Button>
+                )}
+                {esAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => (window.location.href = "/admin/pagos")}
+                  >
+                    Verificar
+                  </Button>
+                )}
                 {esAdmin && p.estado === "paid" && (
                   <Button
                     variant="outline"

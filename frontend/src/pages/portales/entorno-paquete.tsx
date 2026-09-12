@@ -4,7 +4,8 @@ import { ArrowLeft, CalendarClock, Layers, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { History } from "lucide-react";
 import { NavEntorno } from "@/components/portal/nav-entorno";
-import { BarraProgreso } from "@/components/portal/barra-progreso";
+import { BarraEtapas } from "@/components/portal/barra-etapas";
+import { EditorEtapas } from "@/components/portal/editor-etapas";
 import { Semaforo } from "@/components/portal/semaforo";
 import { ArchivosVista } from "@/components/portal/archivos-vista";
 import { api } from "@/lib/api/cliente";
@@ -104,24 +105,49 @@ export function EntornoPaquete() {
         <p className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm">
           <CalendarClock className="size-4 text-[var(--brand-acento)]" />
           Entrega:{" "}
-          {new Date(proyecto.fechaEntrega).toLocaleDateString("es-CO", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })}
+          {proyecto.fechaEntrega
+            ? new Date(proyecto.fechaEntrega).toLocaleDateString("es-CO", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "Por definir"}
         </p>
       </div>
 
       <NavEntorno familia="paquete" id={id!} activo="resumen" />
 
-      {/* Barra de progreso */}
+      {/* Barra de etapas (plan personalizable) */}
       <section className="mt-6 rounded-2xl border bg-card p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Progreso del proyecto
+          Progreso por etapas
         </h2>
         <div className="mt-3">
-          <BarraProgreso estado={proyecto.estado} />
+          <BarraEtapas
+            etapas={proyecto.etapas}
+            montoPagado={proyecto.montoPagado}
+            montoTotal={proyecto.montoTotal}
+            moneda={proyecto.moneda}
+            onPagar={(pagoId) =>
+              (window.location.href = `/cliente/pagar/${pagoId}`)
+            }
+          />
         </div>
+        {esAdmin && id && (
+          <details className="mt-5">
+            <summary className="cursor-pointer text-sm font-semibold text-[var(--brand-primario)]">
+              Editar etapas y pagos (admin)
+            </summary>
+            <EditorEtapas
+              familia="proyecto"
+              id={id}
+              etapas={proyecto.etapas}
+              precioBase={proyecto.precioBase}
+              moneda={proyecto.moneda}
+              onCambiar={cargar}
+            />
+          </details>
+        )}
       </section>
 
       {/* Garantía de soporte */}

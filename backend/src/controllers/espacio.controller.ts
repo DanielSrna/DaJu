@@ -94,11 +94,19 @@ export class EspacioController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { nombre } = req.body as { nombre: string };
+      const { nombre, costoSugerido, descripcion } = req.body as {
+        nombre: string;
+        costoSugerido?: number;
+        descripcion?: string;
+      };
       if (!nombre?.trim())
         throw ApiError.validation("El nombre es obligatorio");
       const vista = await vistaDisenoService.crear(req.params.id, {
         nombre: nombre.trim(),
+        ...(typeof costoSugerido === "number" ? { costoSugerido } : {}),
+        ...(typeof descripcion === "string"
+          ? { descripcion: descripcion.slice(0, 500) }
+          : {}),
       });
       res.status(201).json({ vista });
     } catch (error) {
@@ -247,17 +255,27 @@ export class EspacioController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { titulo, descripcion } = req.body as {
-        titulo: string;
-        descripcion: string;
-      };
+      const { titulo, descripcion, costoSugerido, origen, catalogoClave } =
+        req.body as {
+          titulo: string;
+          descripcion: string;
+          costoSugerido?: number;
+          origen?: "personalizada" | "catalogo";
+          catalogoClave?: string;
+        };
       if (!titulo?.trim() || !descripcion?.trim()) {
         throw ApiError.validation("Título y descripción son obligatorios");
       }
       const solicitud = await solicitudFuncionService.crear(
         { espacioId: req.params.id },
         req.user!.id,
-        { titulo: titulo.trim(), descripcion: descripcion.trim() },
+        {
+          titulo: titulo.trim(),
+          descripcion: descripcion.trim(),
+          ...(typeof costoSugerido === "number" ? { costoSugerido } : {}),
+          ...(origen === "catalogo" ? { origen } : {}),
+          ...(typeof catalogoClave === "string" ? { catalogoClave } : {}),
+        },
       );
       res.status(201).json({ solicitud });
     } catch (error) {

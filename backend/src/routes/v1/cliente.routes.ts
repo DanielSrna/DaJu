@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { clienteController } from "../../controllers/cliente.controller";
-import { authMiddleware, requireRol } from "../../middlewares/auth.middleware";
+import {
+  authMiddleware,
+  requireEmailVerificado,
+  requireRol,
+} from "../../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -23,6 +27,7 @@ const router = Router();
 router.get(
   "/cliente/resumen",
   authMiddleware,
+  requireEmailVerificado,
   clienteController.resumen.bind(clienteController),
 );
 

@@ -77,10 +77,9 @@ describe("Detalles multiproducto", () => {
     expect(await screen.findByRole("heading", { name: "Plantilla Reservas" }))
       .toBeInTheDocument();
     expect(screen.getByText("Plantilla · Reservas")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Comprar ahora/i })).toHaveAttribute(
-      "href",
-      "/plantillas/reservas/comprar",
-    );
+    expect(
+      screen.getByRole("button", { name: /Cotizar esta plantilla/i }),
+    ).toBeInTheDocument();
   });
 
   it("el detalle de servicio es textual y reserva por sesión", async () => {
@@ -95,8 +94,8 @@ describe("Detalles multiproducto", () => {
     expect(screen.getByText("60 min")).toBeInTheDocument();
     expect(screen.getByText("Por Meet")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Comprar bono de sesiones/i }),
-    ).toHaveAttribute("href", "/servicios/auditoria-codigo/comprar");
+      screen.getByRole("button", { name: /Cotizar mis sesiones/i }),
+    ).toBeInTheDocument();
   });
 
   it("mercado de plantillas y servicios en /productos enlaza a los detalles", async () => {

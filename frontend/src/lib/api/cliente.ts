@@ -8,6 +8,8 @@ import type {
   Servicio,
   ServicioInput,
   TipoProducto,
+  CotizacionResultado,
+  EtapaPortal,
   Oferta,
   OfertaInput,
   FuncionalidadExtra,
@@ -24,6 +26,9 @@ import type {
   BriefingV2,
   Notificacion,
   PagoItem,
+  MetodoPago,
+  MetodoPagoInput,
+  ElegirMetodoResultado,
   ApiError,
 } from "./tipos";
 
@@ -64,6 +69,52 @@ async function peticion<T>(url: string, opciones?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+export interface EtapaInput {
+  nombre?: string;
+  descripcion?: string;
+  monto?: number;
+  requierePago?: boolean;
+}
+
+/** Rutas de etapas compartidas por proyecto y espacio. */
+function etapasApi(base: "proyectos" | "espacios") {
+  return {
+    agregar: (id: string, datos: EtapaInput) =>
+      peticion<{ etapas: EtapaPortal[] }>(`/${base}/${id}/etapas`, {
+        method: "POST",
+        body: JSON.stringify(datos),
+      }),
+    actualizar: (id: string, etapaId: string, datos: EtapaInput) =>
+      peticion<{ etapas: EtapaPortal[] }>(`/${base}/${id}/etapas/${etapaId}`, {
+        method: "PUT",
+        body: JSON.stringify(datos),
+      }),
+    eliminar: (id: string, etapaId: string) =>
+      peticion<{ etapas: EtapaPortal[] }>(`/${base}/${id}/etapas/${etapaId}`, {
+        method: "DELETE",
+      }),
+    reordenar: (id: string, orden: string[]) =>
+      peticion<{ etapas: EtapaPortal[] }>(`/${base}/${id}/etapas/orden`, {
+        method: "PUT",
+        body: JSON.stringify({ orden }),
+      }),
+    cambiarEstado: (
+      id: string,
+      etapaId: string,
+      estado: "en_curso" | "completada",
+    ) =>
+      peticion<{ etapas: EtapaPortal[] }>(
+        `/${base}/${id}/etapas/${etapaId}/estado`,
+        { method: "POST", body: JSON.stringify({ estado }) },
+      ),
+    solicitarPago: (id: string, etapaId: string) =>
+      peticion<{ pago: PagoItem }>(
+        `/${base}/${id}/etapas/${etapaId}/solicitar-pago`,
+        { method: "POST" },
+      ),
+  };
+}
+
 export const api = {
   cms: () => peticion<CmsPublico>("/cms"),
 
@@ -90,6 +141,12 @@ export const api = {
     }),
   publicarCms: () =>
     peticion<{ publicado: CmsPublico }>("/cms/publicar", { method: "POST" }),
+
+  actualizarTasaCop: (tasaCop: number) =>
+    peticion<{ tasaCop: number }>("/cms/tasa-cop", {
+      method: "PUT",
+      body: JSON.stringify({ tasaCop }),
+    }),
 
   paquetes: () => peticion<{ paquetes: Paquete[] }>("/paquetes"),
   paquetePorSlug: (slug: string) =>
@@ -257,6 +314,49 @@ export const api = {
       body: JSON.stringify(datos),
     }),
 
+  /** Registro con producto: abre el entorno en planeación (gratis, sin pago). */
+  cotizar: (datos: {
+    tipoProducto?: TipoProducto;
+    paqueteId?: string;
+    productoId?: string;
+    nombre: string;
+    segundoNombre?: string;
+    primerApellido: string;
+    segundoApellido?: string;
+    fechaNacimiento: string;
+    aceptaCondiciones: boolean;
+    aceptaDatos: boolean;
+    email: string;
+    password: string;
+  }) =>
+    peticion<CotizacionResultado>("/cotizaciones", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    }),
+
+  /** Cliente con sesión activa: adquiere otro producto sin registrarse. */
+  cotizarComoCliente: (datos: {
+    tipoProducto?: TipoProducto;
+    paqueteId?: string;
+    productoId?: string;
+  }) =>
+    peticion<CotizacionResultado>("/cotizaciones/cliente", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    }),
+
+  verificarEmail: (token: string) =>
+    peticion<{ ok: boolean }>("/auth/verificar-email", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
+
+  reenviarVerificacion: (email: string) =>
+    peticion<{ ok: boolean }>("/auth/reenviar-verificacion", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
   contacto: (datos: {
     nombre: string;
     email: string;
@@ -280,9 +380,16 @@ export const api = {
         cliente: { id: string; email: string; nombre: string };
         paquete: { nombre: string; slug: string; tipo: string; soporteMeses: number };
         estado: string;
-        fechaCompra: string;
-        fechaEntrega: string;
+        fechaCompra: string | null;
+        fechaEntrega: string | null;
         fechaEntregado: string | null;
+        precioBase: number;
+        moneda: string;
+        etapas: EtapaPortal[];
+        etapasCompletadas: number;
+        etapasTotal: number;
+        montoPagado: number;
+        montoTotal: number;
       };
     }>(`/proyectos/${id}`),
 
@@ -304,6 +411,70 @@ export const api = {
   reembolsarPago: (id: string) =>
     peticion<{ pago: PagoItem }>(`/pagos/${id}/reembolsar`, { method: "POST" }),
 
+  /* ================= Recaudo (transferencias + PayPal) ================= */
+
+  metodosPago: () => peticion<{ metodos: MetodoPago[] }>("/metodos-pago"),
+  metodosPagoAdmin: () =>
+    peticion<{ metodos: MetodoPago[] }>("/metodos-pago/admin"),
+  crearMetodoPago: (datos: MetodoPagoInput) =>
+    peticion<{ metodo: MetodoPago }>("/metodos-pago", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    }),
+  actualizarMetodoPago: (id: string, datos: Partial<MetodoPagoInput>) =>
+    peticion<{ metodo: MetodoPago }>(`/metodos-pago/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(datos),
+    }),
+  eliminarMetodoPago: (id: string) =>
+    peticion<unknown>(`/metodos-pago/${id}`, { method: "DELETE" }),
+
+  pagoPorId: (id: string) => peticion<{ pago: PagoItem }>(`/pagos/${id}`),
+  elegirMetodoPago: (id: string, metodo: string) =>
+    peticion<ElegirMetodoResultado>(`/pagos/${id}/metodo`, {
+      method: "POST",
+      body: JSON.stringify({ metodo }),
+    }),
+  subirComprobantePago: (
+    id: string,
+    archivo: File,
+    referenciaCliente?: string,
+  ) => {
+    const form = new FormData();
+    form.append("archivo", archivo);
+    if (referenciaCliente) form.append("referenciaCliente", referenciaCliente);
+    return peticion<{ pago: PagoItem }>(`/pagos/${id}/comprobante`, {
+      method: "POST",
+      body: form,
+    });
+  },
+  capturarPaypalPago: (id: string) =>
+    peticion<{ pago: PagoItem }>(`/pagos/${id}/paypal/capturar`, {
+      method: "POST",
+    }),
+  pagosPorVerificar: () =>
+    peticion<{ pagos: PagoItem[] }>("/pagos/por-verificar"),
+  confirmarPago: (id: string) =>
+    peticion<{ pago: PagoItem }>(`/pagos/${id}/confirmar`, { method: "POST" }),
+  rechazarPago: (id: string, motivo: string) =>
+    peticion<{ pago: PagoItem }>(`/pagos/${id}/rechazar`, {
+      method: "POST",
+      body: JSON.stringify({ motivo }),
+    }),
+  solicitarPago: (datos: {
+    proyectoId?: string;
+    espacioId?: string;
+    etapaId?: string;
+    tipoPago: "etapa" | "sesiones";
+    monto: number;
+    cantidad?: number;
+    descripcion?: string;
+  }) =>
+    peticion<{ pago: PagoItem }>("/pagos/solicitar", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    }),
+
   proyectosAdmin: (filtros?: { estado?: string; q?: string }) => {
     const q = new URLSearchParams();
     if (filtros?.estado) q.set("estado", filtros.estado);
@@ -316,17 +487,20 @@ export const api = {
         cliente: { nombre: string; email: string };
         paquete: { nombre: string; slug: string; tipo: string; soporteMeses: number };
         estado: string;
-        fechaEntrega: string;
+        fechaCompra: string | null;
+        fechaEntrega: string | null;
+        precioBase: number;
+        moneda: string;
       }>;
       total: number;
       pagina: number;
       totalPaginas: number;
     }>(`/proyectos/admin${cadena ? `?${cadena}` : ""}`);
   },
-  moverEstadoProyecto: (id: string, estado: string) =>
+  moverEstadoProyecto: (id: string, estado: string, forzar = false) =>
     peticion<{ proyecto: unknown }>(`/proyectos/${id}/estado`, {
       method: "PUT",
-      body: JSON.stringify({ estado }),
+      body: JSON.stringify({ estado, ...(forzar ? { forzar } : {}) }),
     }),
   garantiaProyecto: (id: string) =>
     peticion<{ garantia: import("./tipos").GarantiaInfo }>(`/proyectos/${id}/garantia`),
@@ -395,10 +569,19 @@ export const api = {
 
   vistasEspacio: (espacioId: string) =>
     peticion<{ vistas: VistaDisenoPortal[] }>(`/espacios/${espacioId}/vistas`),
-  crearVista: (espacioId: string, nombre: string) =>
+  crearVista: (
+    espacioId: string,
+    nombre: string,
+    costoSugerido?: number,
+    descripcion?: string,
+  ) =>
     peticion<{ vista: VistaDisenoPortal }>(`/espacios/${espacioId}/vistas`, {
       method: "POST",
-      body: JSON.stringify({ nombre }),
+      body: JSON.stringify({
+        nombre,
+        ...(costoSugerido ? { costoSugerido } : {}),
+        ...(descripcion ? { descripcion } : {}),
+      }),
     }),
   actualizarVista: (
     vistaId: string,
@@ -482,7 +665,16 @@ export const api = {
     peticion<{ solicitudes: SolicitudFuncion[] }>(`/espacios/${espacioId}/solicitudes`),
   solicitudesProyecto: (proyectoId: string) =>
     peticion<{ solicitudes: SolicitudFuncion[] }>(`/proyectos/${proyectoId}/solicitudes`),
-  crearSolicitud: (espacioId: string, datos: { titulo: string; descripcion: string }) =>
+  crearSolicitud: (
+    espacioId: string,
+    datos: {
+      titulo: string;
+      descripcion: string;
+      costoSugerido?: number;
+      origen?: "personalizada" | "catalogo";
+      catalogoClave?: string;
+    },
+  ) =>
     peticion<{ solicitud: SolicitudFuncion }>(`/espacios/${espacioId}/solicitudes`, {
       method: "POST",
       body: JSON.stringify(datos),
@@ -503,10 +695,19 @@ export const api = {
 
   briefingV2: (proyectoId: string) =>
     peticion<{ briefing: BriefingV2 }>(`/briefing/${proyectoId}`),
-  crearVistaBriefing: (proyectoId: string, nombre: string) =>
+  crearVistaBriefing: (
+    proyectoId: string,
+    nombre: string,
+    costoSugerido?: number,
+    requisitos?: string,
+  ) =>
     peticion<{ briefing: BriefingV2 }>(`/briefing/${proyectoId}/vistas`, {
       method: "POST",
-      body: JSON.stringify({ nombre }),
+      body: JSON.stringify({
+        nombre,
+        ...(costoSugerido ? { costoSugerido } : {}),
+        ...(requisitos ? { requisitos } : {}),
+      }),
     }),
   guardarBriefingV2: (proyectoId: string, contenido: BriefingV2["contenido"], completado?: boolean) =>
     peticion<{ briefing: BriefingV2 }>(`/briefing/${proyectoId}`, {
@@ -522,4 +723,7 @@ export const api = {
       `/briefing/${proyectoId}/vistas/${vistaId}`,
       { method: "PUT", body: JSON.stringify(datos) },
     ),
+
+  etapasProyecto: etapasApi("proyectos"),
+  etapasEspacio: etapasApi("espacios"),
 };

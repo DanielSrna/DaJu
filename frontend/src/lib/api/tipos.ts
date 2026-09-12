@@ -12,6 +12,8 @@ export interface CmsPublico {
   textos: Record<string, string>;
   descuento: DescuentoCms;
   diasExtra: number;
+  /** Pesos por dólar para pagos locales (0 = sin conversión). */
+  tasaCop?: number;
 }
 
 /** Descuento global de la vitrina (solo se aplica si la marquesina lo anuncia). */
@@ -157,6 +159,40 @@ export interface ServicioInput {
 /** Familia comprada; define el entorno de acceso (contrato de pagos). */
 export type TipoProducto = "paquete" | "plantilla" | "servicio";
 
+/** Etapa del plan de trabajo (barra de progreso personalizable). */
+export interface EtapaPortal {
+  _id: string;
+  nombre: string;
+  descripcion: string;
+  orden: number;
+  monto: number;
+  requierePago: boolean;
+  pagoEstado: "no_requerido" | "pendiente" | "solicitado" | "pagado";
+  estado: "bloqueada" | "en_curso" | "completada";
+  pagoId: string | null;
+  completadaEn: string | null;
+}
+
+/** Resultado de POST /cotizaciones (registro con producto, sin pago). */
+export interface CotizacionResultado {
+  entorno: {
+    tipo: "proyecto" | "espacio";
+    id: string;
+    tipoProducto: TipoProducto;
+    productoSlug: string;
+    productoNombre: string;
+    estado: string;
+  };
+  usuario: {
+    id: string;
+    email: string;
+    nombre: string;
+    rol: "admin" | "cliente";
+    emailVerificado: boolean;
+  };
+  nuevo: boolean;
+}
+
 /** Resumen del portal del cliente (GET /cliente/resumen). */
 export interface ResumenPortal {
   proyectos: Array<{
@@ -175,7 +211,7 @@ export interface ResumenPortal {
     tipoProducto: "plantilla" | "servicio";
     productoSlug: string;
     sesiones: { total: number; usadas: number };
-    estado: "activo" | "completado";
+    estado: "planeacion" | "activo" | "completado";
     clienteNombre?: string;
     clienteId?: string;
   }>;
@@ -208,7 +244,14 @@ export interface EspacioPortal {
   tipoProducto: "plantilla" | "servicio";
   productoSlug: string;
   pagoId: string;
-  estado: "activo" | "completado";
+  estado: "planeacion" | "activo" | "completado";
+  precioBase?: number;
+  moneda?: string;
+  etapas?: EtapaPortal[];
+  etapasCompletadas?: number;
+  etapasTotal?: number;
+  montoPagado?: number;
+  montoTotal?: number;
   sesiones: { total: number; usadas: number };
 }
 
@@ -251,6 +294,10 @@ export interface SolicitudFuncion {
   descripcion: string;
   estado: "abierta" | "respondida" | "aceptada" | "pagada";
   costo: number;
+  /** Precio de catálogo sugerido cuando la función viene de la lista. */
+  costoSugerido: number;
+  origen: "personalizada" | "catalogo";
+  catalogoClave: string;
   respuestaAdmin: string;
   createdAt: string;
 }
@@ -334,14 +381,69 @@ export interface BriefingV2 {
 export interface PagoItem {
   id: string;
   tipoProducto: "paquete" | "plantilla" | "servicio" | "funcionalidad";
+  tipoPago: "total" | "etapa" | "sesiones" | "funcionalidad";
   productoSlug: string;
   descripcion: string;
   monto: number;
   moneda: string;
-  estado: "pending" | "paid" | "failed" | "refunded";
+  montoCop: number | null;
+  emailCliente: string;
+  estado:
+    | "pending"
+    | "en_revision"
+    | "paid"
+    | "failed"
+    | "rechazado"
+    | "refunded";
   referencia: string | null;
+  metodoPago: string;
+  codigo: string;
+  comprobante: {
+    url: string;
+    nombre: string;
+    subidoEn: string | null;
+  } | null;
+  referenciaCliente: string;
+  proyectoId: string;
+  espacioId: string;
+  etapaId: string;
+  motivoRechazo: string;
   cantidad: number;
   createdAt: string;
+}
+
+/** Método de pago configurable desde el panel admin. */
+export interface MetodoPago {
+  id: string;
+  nombre: string;
+  clave: string;
+  tipo: "manual" | "paypal";
+  moneda: "COP" | "USD";
+  titular: string;
+  datos: string;
+  instrucciones: string;
+  qrUrl: string;
+  activo: boolean;
+  orden: number;
+}
+
+export interface MetodoPagoInput {
+  nombre: string;
+  tipo?: "manual" | "paypal";
+  moneda?: "COP" | "USD";
+  titular?: string;
+  datos?: string;
+  instrucciones?: string;
+  qrUrl?: string;
+  activo?: boolean;
+  orden?: number;
+}
+
+export interface ElegirMetodoResultado {
+  pago: PagoItem;
+  metodo: MetodoPago;
+  montoCop: number | null;
+  urlPago: string | null;
 }
 
 export interface GarantiaInfo {

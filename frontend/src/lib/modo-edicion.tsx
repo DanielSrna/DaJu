@@ -12,6 +12,7 @@ interface Usuario {
   email: string;
   rol: "admin" | "cliente";
   nombre: string;
+  emailVerificado: boolean;
 }
 
 /** Contrato de GET /auth/me: la API devuelve { user }. */

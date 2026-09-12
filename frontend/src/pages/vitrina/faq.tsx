@@ -17,6 +17,11 @@ interface Pregunta {
 
 const PREGUNTAS: Pregunta[] = [
   {
+    pregunta: "¿Cuánto cuesta empezar?",
+    respuesta:
+      "La fase de planeación y diseño es completamente gratis: creas tu cuenta, conversamos tu idea, definimos alcance y vistas, y solo pagas cuando acordemos el desarrollo. El pago se hace por etapas, así que nunca desembolsas todo de golpe.",
+  },
+  {
     pregunta: "¿Qué garantías hay?",
     respuesta:
       "Todos los paquetes incluyen soporte técnico por un período definido (2, 6 o 12 meses según el paquete). Si algo no funciona como acordamos dentro de la garantía, lo corregimos sin costo.",
@@ -25,7 +30,7 @@ const PREGUNTAS: Pregunta[] = [
   {
     pregunta: "¿Qué servicios se ofrecen después de la compra?",
     respuesta:
-      "Después de comprar recibes: un briefing guiado para entregar el contenido, seguimiento de tu proyecto por etapas (recibido, diseño, desarrollo y entrega) y soporte con garantía.",
+      "Después de cotizar recibes: un briefing guiado para entregar el contenido, seguimiento de tu proyecto por etapas (planeación gratis, desarrollo por hitos y entrega) y soporte con garantía.",
     concepto: "garantia-y-soporte-postventa",
   },
   {
@@ -61,7 +66,7 @@ const PREGUNTAS: Pregunta[] = [
   {
     pregunta: "¿Puedo pagar en cuotas o con otro método?",
     respuesta:
-      "Sí. El checkout permite pagar con tarjeta, PSE o billeteras móviles como NEQUI y Daviplata (a través de la pasarela de pagos). Puedes ponerte en contacto si necesitas una facilidad especial.",
+      "Sí. Pagas por etapas (nunca todo de golpe) y eliges el medio que te sirva: Bre-B, Nequi, DaviPlata, Nu, transferencia a cuenta de ahorros o PayPal. En tu entorno ves las instrucciones y confirmamos cada pago contigo.",
   },
   {
     pregunta: "¿Qué pasa si quiero cambiar el diseño después de la entrega?",

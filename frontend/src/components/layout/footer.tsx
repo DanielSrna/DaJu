@@ -125,6 +125,22 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link
+                className="hover:text-[var(--brand-acento)]"
+                to="/contratos/condiciones"
+              >
+                Contrato de condiciones
+              </Link>
+            </li>
+            <li>
+              <Link
+                className="hover:text-[var(--brand-acento)]"
+                to="/contratos/datos"
+              >
+                Contrato de manejo de datos
+              </Link>
+            </li>
+            <li>
               <Link className="hover:text-[var(--brand-acento)]" to="/privacidad">
                 Política de privacidad
               </Link>

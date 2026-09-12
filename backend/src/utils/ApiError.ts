@@ -2,6 +2,7 @@ export type ErrorCode =
   | "VALIDATION_ERROR"
   | "UNAUTHORIZED"
   | "FORBIDDEN"
+  | "EMAIL_NO_VERIFICADO"
   | "NOT_FOUND"
   | "CONFLICT"
   | "PAYMENT_REQUIRED"
@@ -44,6 +45,12 @@ export class ApiError extends Error {
 
   static notFound(message = "Recurso no encontrado"): ApiError {
     return new ApiError(404, "NOT_FOUND", message);
+  }
+
+  static emailNoVerificado(
+    message = "Confirma tu correo para entrar a tu entorno",
+  ): ApiError {
+    return new ApiError(403, "EMAIL_NO_VERIFICADO", message);
   }
 
   static conflict(message: string): ApiError {

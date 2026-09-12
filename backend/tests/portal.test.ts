@@ -280,7 +280,9 @@ describe("Portal del cliente (fase 2)", () => {
       .post(`/api/v1/solicitudes/${solId}/aceptar`)
       .set("Cookie", a.cookies);
     expect(aceptada.status).toBe(201);
-    expect(typeof aceptada.body.urlPago).toBe("string");
+    expect(aceptada.body.urlPago).toBeNull();
+    expect(aceptada.body.pago.id).toBeTruthy();
+    expect(aceptada.body.pago.codigo).toMatch(/^DJ-/);
     expect(aceptada.body.pago.tipoProducto).toBe("funcionalidad");
   });
 
@@ -457,7 +459,7 @@ describe("Portal del cliente (fase 2)", () => {
       .expect(204);
   });
 
-  it("aceptar solicitud genera checkout de funcionalidad (una sola vez)", async () => {
+  it("aceptar solicitud habilita el pago de la funcionalidad (una sola vez)", async () => {
     const a = await creaUsuario("a@a.com", "cliente");
     const admin = await creaUsuario("admin@x.com", "admin");
     const espacio = await compraEspacio(a.id, 1);
@@ -477,7 +479,7 @@ describe("Portal del cliente (fase 2)", () => {
       .post(`/api/v1/solicitudes/${solId}/aceptar`)
       .set("Cookie", a.cookies);
     expect(pagar.status).toBe(201);
-    expect(pagar.body.urlPago).toBe("https://checkout.epayco.test/pagar");
+    expect(pagar.body.urlPago).toBeNull();
     expect(pagar.body.pago.tipoProducto).toBe("funcionalidad");
     expect(pagar.body.pago.monto).toBe(45);
 

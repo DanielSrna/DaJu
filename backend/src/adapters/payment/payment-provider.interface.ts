@@ -27,4 +27,6 @@ export interface PaymentProvider {
   }>;
   /** Reembolso (opcional por pasarela; lanza error si no lo soporta). */
   refund?(paymentId: string): Promise<void>;
+  /** Captura de una orden aprobada (PayPal; opcional por pasarela). */
+  capture?(paymentId: string): Promise<PaymentResult>;
 }

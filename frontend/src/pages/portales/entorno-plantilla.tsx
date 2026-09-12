@@ -3,20 +3,27 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Blocks, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavEntorno } from "@/components/portal/nav-entorno";
+import { BarraEtapas } from "@/components/portal/barra-etapas";
+import { EditorEtapas } from "@/components/portal/editor-etapas";
 import { Semaforo } from "@/components/portal/semaforo";
 import { api } from "@/lib/api/cliente";
-import type { VistaDisenoPortal } from "@/lib/api/tipos";
+import { useModoEdicion } from "@/lib/modo-edicion";
+import type { EspacioPortal, VistaDisenoPortal } from "@/lib/api/tipos";
 
 /** Resumen del entorno de plantilla: enlaces a vistas, funciones y chat. */
 export function EntornoPlantilla() {
   const { id } = useParams<{ id: string }>();
   const [vistas, setVistas] = useState<VistaDisenoPortal[] | null>(null);
+  const [espacio, setEspacio] = useState<EspacioPortal | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nuevaVista, setNuevaVista] = useState("");
+  const { usuario } = useModoEdicion();
+  const esAdmin = usuario?.rol === "admin";
 
   const cargar = (): void => {
     if (!id) return;
     api.vistasEspacio(id).then((r) => setVistas(r.vistas)).catch(() => setVistas([]));
+    api.espacio(id).then((r) => setEspacio(r.espacio)).catch(() => null);
   };
 
   useEffect(() => {
@@ -50,6 +57,40 @@ export function EntornoPlantilla() {
       </p>
 
       <NavEntorno familia="plantilla" id={id ?? ""} activo="resumen" />
+
+      {espacio && (
+        <section className="mt-6 rounded-2xl border bg-card p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Progreso por etapas
+          </h2>
+          <div className="mt-3">
+            <BarraEtapas
+              etapas={espacio.etapas ?? []}
+              montoPagado={espacio.montoPagado ?? 0}
+              montoTotal={espacio.montoTotal ?? 0}
+              moneda={espacio.moneda ?? "USD"}
+              onPagar={(pagoId) =>
+                (window.location.href = `/cliente/pagar/${pagoId}`)
+              }
+            />
+          </div>
+          {esAdmin && id && (
+            <details className="mt-5">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--brand-primario)]">
+                Editar etapas y pagos (admin)
+              </summary>
+              <EditorEtapas
+                familia="espacio"
+                id={id}
+                etapas={espacio.etapas ?? []}
+                precioBase={espacio.precioBase ?? 0}
+                moneda={espacio.moneda ?? "USD"}
+                onCambiar={cargar}
+              />
+            </details>
+          )}
+        </section>
+      )}
 
       <div className="mt-6 flex gap-2">
         <input

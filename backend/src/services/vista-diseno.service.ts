@@ -79,7 +79,12 @@ export class VistaDisenoService {
 
   async crear(
     espacioId: string,
-    datos: { nombre: string; orden?: number },
+    datos: {
+      nombre: string;
+      orden?: number;
+      costoSugerido?: number;
+      descripcion?: string;
+    },
   ): Promise<VistaDisenoJson> {
     logger.proceso("VistaDisenoService.crear", { espacioId });
     await this.espacioPropio(espacioId);
@@ -96,9 +101,13 @@ export class VistaDisenoService {
       await SolicitudFuncionModel.create({
         espacioId,
         titulo: datos.nombre,
-        descripcion: `Función/vista solicitada por el cliente: ${datos.nombre}`,
+        descripcion:
+          datos.descripcion?.trim() ||
+          `Función/vista solicitada por el cliente: ${datos.nombre}`,
         estado: "abierta",
         costo: 0,
+        costoSugerido: datos.costoSugerido ?? 0,
+        origen: datos.costoSugerido ? "catalogo" : "personalizada",
         respuestaAdmin: "",
       });
       const { notificacionService } = await import("./notificacion.service");

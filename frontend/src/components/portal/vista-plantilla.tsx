@@ -195,10 +195,7 @@ function NegociacionVista({
     setEnviando(true);
     try {
       const r = await api.aceptarSolicitud(solicitud!.id);
-      if (r.urlPago) {
-        window.location.href = r.urlPago;
-        return;
-      }
+      window.location.href = `/cliente/pagar/${r.pago.id}`;
     } catch (e) {
       setError((e as Error).message);
     } finally {

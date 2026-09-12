@@ -41,7 +41,7 @@ export class NodemailerEmailProvider implements EmailProvider {
 
     try {
       await this.transporter.sendMail({
-        from: message.from ?? `MainPlataform <${env.EMAIL_USER}>`,
+        from: message.from ?? `DaJu Plataform <${env.EMAIL_USER}>`,
         to: message.to,
         subject: message.subject,
         html: message.html,

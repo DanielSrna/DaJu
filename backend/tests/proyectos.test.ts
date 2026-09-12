@@ -273,9 +273,9 @@ describe("Proyectos API (centro de proyectos + gestor de capacidad)", () => {
       expect(res.body.proyectosRecalculados).toBe(1);
 
       const despues = (await ProyectoModel.findById(id))!;
-      const esperado = addBusinessDays(new Date(antes.fechaCompra), 35);
-      expect(despues.fechaEntrega.getTime()).toBeGreaterThan(antes.fechaEntrega.getTime());
-      expect(despues.fechaEntrega.toISOString().slice(0, 10)).toBe(
+      const esperado = addBusinessDays(new Date(antes.fechaCompra!), 35);
+      expect(despues.fechaEntrega!.getTime()).toBeGreaterThan(antes.fechaEntrega!.getTime());
+      expect(despues.fechaEntrega!.toISOString().slice(0, 10)).toBe(
         esperado.toISOString().slice(0, 10),
       );
     });

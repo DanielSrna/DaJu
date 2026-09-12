@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ArrowRight, Blocks, Check, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CotizarModal } from "@/components/vitrina/cotizar-modal";
 import { TextoEnriquecido } from "@/components/editor/editor-texto";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GaleriaProducto } from "@/components/vitrina/galeria-producto";
@@ -16,6 +17,7 @@ export function DetallePlantilla() {
   const { slug } = useParams<{ slug: string }>();
   const [plantilla, setPlantilla] = useState<Plantilla | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cotizarAbierto, setCotizarAbierto] = useState(false);
   const { cms } = useTema();
 
   useEffect(() => {
@@ -125,18 +127,17 @@ export function DetallePlantilla() {
               <span className="text-base font-normal text-muted-foreground"> USD</span>
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Puedes sumar funcionalidades en el siguiente paso.
+              Empiezas gratis: en tu entorno ajustamos el alcance y las
+              funcionalidades antes de pagar.
             </p>
             <Button
-              asChild
               variant="accent"
               size="lg"
               className="mt-4 w-full"
+              onClick={() => setCotizarAbierto(true)}
             >
-              <Link to={`/plantillas/${plantilla.slug}/comprar`}>
-                Comprar ahora
-                <ArrowRight />
-              </Link>
+              Cotizar esta plantilla
+              <ArrowRight />
             </Button>
           </div>
         </div>
@@ -166,6 +167,16 @@ export function DetallePlantilla() {
           </div>
         )}
       </div>
+
+      <CotizarModal
+        tipo="plantilla"
+        productoId={plantilla.id}
+        nombre={plantilla.nombre}
+        precio={precioFinal}
+        moneda={plantilla.moneda}
+        abierto={cotizarAbierto}
+        onCambiar={setCotizarAbierto}
+      />
     </div>
   );
 }

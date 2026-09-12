@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 import { authController } from "../../controllers/auth.controller";
-import { authMiddleware } from "../../middlewares/auth.middleware";
+import { authMiddleware, requireRol } from "../../middlewares/auth.middleware";
 import { validate } from "../../middlewares/validate.middleware";
 import { authRateLimiter } from "../../middlewares/rate-limit.middleware";
 
@@ -160,6 +160,101 @@ router.post(
   body("password").isString().notEmpty().withMessage("Contraseña obligatoria"),
   validate,
   authController.login.bind(authController),
+);
+
+/**
+ * @swagger
+ * /auth/verificar-email:
+ *   post:
+ *     summary: Confirmar el correo con el token del enlace
+ *     description: |
+ *       Verifica la cuenta creada en la cotización. El token llega por correo y
+ *       es válido por 24 horas.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token: { type: string }
+ *     responses:
+ *       200:
+ *         description: Correo verificado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok: { type: boolean }
+ *                 user: { $ref: '#/components/schemas/User' }
+ *       400:
+ *         description: Token inválido o expirado
+ *         content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+ */
+router.post(
+  "/auth/verificar-email",
+  authRateLimiter,
+  body("token").isString().notEmpty().withMessage("Token requerido"),
+  validate,
+  authController.verificarEmail.bind(authController),
+);
+
+/**
+ * @swagger
+ * /auth/reenviar-verificacion:
+ *   post:
+ *     summary: Reenviar el correo de verificación
+ *     description: Silencioso si la cuenta no existe o ya está verificada.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200:
+ *         description: Solicitud procesada
+ */
+router.post(
+  "/auth/reenviar-verificacion",
+  authRateLimiter,
+  body("email").isEmail().withMessage("Email inválido").trim().toLowerCase(),
+  validate,
+  authController.reenviarVerificacion.bind(authController),
+);
+
+/**
+ * @swagger
+ * /auth/usuarios/{id}/verificar:
+ *   post:
+ *     summary: Marcar un correo como verificado (solo admin)
+ *     tags: [Auth]
+ *     security: [cookieAuth: []]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Usuario verificado
+ *       404:
+ *         description: Usuario no encontrado
+ */
+router.post(
+  "/auth/usuarios/:id/verificar",
+  authMiddleware,
+  requireRol("admin"),
+  param("id").isMongoId().withMessage("Id inválido"),
+  validate,
+  authController.verificarManual.bind(authController),
 );
 
 /**

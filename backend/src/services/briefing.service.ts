@@ -282,6 +282,8 @@ export class BriefingService {
     rol: "admin" | "cliente",
     userId: string,
     nombre: string,
+    costoSugerido?: number,
+    requisitos?: string,
   ): Promise<BriefingJson> {
     logger.proceso("BriefingService.agregarVista", { proyectoId, nombre });
     await this.verificarAcceso(proyectoId, rol, userId);
@@ -303,7 +305,7 @@ export class BriefingService {
         $push: {
           "contenido.vistas": {
             nombre,
-            requisitos: "",
+            requisitos: requisitos?.trim() ?? "",
             semaforo: "cotizacion",
           },
         },
@@ -321,6 +323,8 @@ export class BriefingService {
       descripcion: `Función/vista solicitada por el cliente: ${nombre}`,
       estado: "abierta",
       costo: 0,
+      costoSugerido: costoSugerido ?? 0,
+      origen: costoSugerido ? "catalogo" : "personalizada",
       respuestaAdmin: "",
     });
 

@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomBytes, randomInt } from "crypto";
 import bcrypt from "bcryptjs";
 import { PagoModel, Pago } from "../models/pago.model";
 import { PaqueteModel } from "../models/paquete.model";
@@ -15,9 +15,21 @@ import {
   PaymentResult,
 } from "../adapters/payment/payment-provider.interface";
 import { createPaymentProvider } from "../adapters/payment/payment-provider.factory";
+import { StorageProvider } from "../adapters/storage/storage-provider.interface";
+import { createStorageProvider } from "../adapters/storage/storage-provider.factory";
+import {
+  detectarTipoArchivo,
+  optimizarImagen,
+  TIPOS_ARCHIVO,
+  TIPOS_IMAGEN,
+} from "../utils/archivos";
 import { proyectoService, CompraPago } from "./proyecto.service";
 import { funcionalidadExtraService } from "./funcionalidad-extra.service";
 import { espacioService } from "./espacio.service";
+import { productoService, ItemCompra } from "./producto.service";
+import { cuentaService } from "./cuenta.service";
+import { metodoPagoService } from "./metodo-pago.service";
+import type { MetodoPagoJson } from "./metodo-pago.service";
 import {
   NotificacionesService,
   notificacionesService,
@@ -25,21 +37,35 @@ import {
 import { ApiError } from "../utils/ApiError";
 import { logger } from "../config/logger";
 
-export type TipoProducto =
-  "paquete" | "plantilla" | "servicio" | "funcionalidad";
+import type { TipoProducto } from "./producto.service";
+export type { TipoProducto };
 
-interface PagoJson {
+export interface PagoJson {
   id: string;
   tipoProducto: TipoProducto;
+  tipoPago: "total" | "etapa" | "sesiones" | "funcionalidad";
   paqueteSlug: string;
   productoSlug: string;
   cantidad: number;
   descripcion: string;
   monto: number;
   moneda: string;
+  montoCop: number | null;
   emailCliente: string;
   estado: Pago["estado"];
   referencia: string | null;
+  metodoPago: string;
+  codigo: string;
+  comprobante: {
+    url: string;
+    nombre: string;
+    subidoEn: Date | null;
+  } | null;
+  referenciaCliente: string;
+  proyectoId: string;
+  espacioId: string;
+  etapaId: string;
+  motivoRechazo: string;
   funcionalidades: Array<{
     id: string;
     nombre: string;
@@ -51,21 +77,19 @@ interface PagoJson {
   createdAt: Date;
 }
 
+/** Archivo subido por multer (comprobantes de pago). */
+export interface ArchivoSubido {
+  buffer: Buffer;
+  nombre: string;
+  tamañoBytes: number;
+}
+
 interface FuncionalidadSnapshot {
   id: string;
   nombre: string;
   categoria: string;
   complejidad: string;
   precio: number;
-}
-
-interface ItemCompra {
-  tipo: TipoProducto;
-  nombre: string;
-  slug: string;
-  precio: number;
-  moneda: string;
-  id: string;
 }
 
 const MAX_FUNCIONALIDADES = 10;
@@ -81,15 +105,31 @@ function toJson(
   return {
     id: String(pago._id),
     tipoProducto: (pago.tipoProducto ?? "paquete") as TipoProducto,
+    tipoPago: (pago.tipoPago ?? "total") as PagoJson["tipoPago"],
     paqueteSlug: pago.paqueteSlug,
     productoSlug: pago.productoSlug ?? "",
     cantidad: pago.cantidad ?? 1,
     descripcion: pago.descripcion,
     monto: pago.monto,
     moneda: pago.moneda,
+    montoCop: pago.montoCop ?? null,
     emailCliente: pago.emailCliente,
     estado: pago.estado,
     referencia: pago.referencia ?? null,
+    metodoPago: pago.metodoPago ?? "",
+    codigo: pago.codigo ?? "",
+    comprobante: pago.comprobante?.url
+      ? {
+          url: pago.comprobante.url,
+          nombre: pago.comprobante.nombre ?? "",
+          subidoEn: pago.comprobante.subidoEn ?? null,
+        }
+      : null,
+    referenciaCliente: pago.referenciaCliente ?? "",
+    proyectoId: pago.proyectoId ? String(pago.proyectoId) : "",
+    espacioId: pago.espacioId ? String(pago.espacioId) : "",
+    etapaId: pago.etapaId ?? "",
+    motivoRechazo: pago.motivoRechazo ?? "",
     funcionalidades: metadata.funcionalidades ?? [],
     negociarDespues: metadata.negociarDespues ?? false,
     createdAt: pago.createdAt,
@@ -100,6 +140,7 @@ export class PagoService {
   constructor(
     private readonly provider: PaymentProvider = createPaymentProvider(),
     private readonly notificaciones: NotificacionesService = notificacionesService,
+    private readonly storage: StorageProvider = createStorageProvider(),
   ) {}
 
   async crearCheckout(data: {
@@ -119,7 +160,7 @@ export class PagoService {
     });
 
     const tipo = (data.tipoProducto ?? "paquete") as TipoProducto;
-    const item = await this.resolverItem(tipo, data);
+    const item = await productoService.resolverItem(tipo, data);
     if (!item) {
       logger.fracaso("PagoService.crearCheckout: ítem no disponible", {
         tipo,
@@ -169,7 +210,8 @@ export class PagoService {
     };
     if (data.nombre !== undefined) datosCuenta.nombre = data.nombre;
     if (data.password !== undefined) datosCuenta.password = data.password;
-    const clienteId = await this.resolverOCrearCliente(datosCuenta);
+    const { id: clienteId } =
+      await cuentaService.resolverOCrearCliente(datosCuenta);
 
     const montoBase = Math.floor(item.precio * factorDescuento);
     const montoTotal =
@@ -201,7 +243,7 @@ export class PagoService {
       },
     });
 
-    const resultado: PaymentResult = await this.crearCheckoutConFallback({
+    const resultado: PaymentResult = await this.provider.createCheckout({
       amount: montoTotal,
       currency: item.moneda,
       description: descripcion,
@@ -230,53 +272,6 @@ export class PagoService {
     return { urlPago: resultado.checkoutUrl, pago: toJson(pago.toObject()) };
   }
 
-  /** Resuelve el ítem comprado según su tipo (siempre desde el catálogo). */
-  private async resolverItem(
-    tipo: TipoProducto,
-    data: { paqueteId?: string; productoId?: string },
-  ): Promise<ItemCompra | null> {
-    const id =
-      tipo === "paquete"
-        ? (data.paqueteId ?? data.productoId)
-        : data.productoId;
-    if (!id) return null;
-
-    if (tipo === "paquete") {
-      const doc = await PaqueteModel.findById(id).lean();
-      if (!doc || !doc.activo) return null;
-      return {
-        tipo,
-        nombre: doc.nombre,
-        slug: doc.slug,
-        precio: doc.precio,
-        moneda: doc.moneda ?? "USD",
-        id,
-      };
-    }
-    if (tipo === "plantilla") {
-      const doc = await PlantillaModel.findById(id).lean();
-      if (!doc || !doc.activo) return null;
-      return {
-        tipo,
-        nombre: doc.nombre,
-        slug: doc.slug,
-        precio: doc.precio,
-        moneda: doc.moneda ?? "USD",
-        id,
-      };
-    }
-    const doc = await ServicioModel.findById(id).lean();
-    if (!doc || !doc.activo) return null;
-    return {
-      tipo,
-      nombre: doc.nombre,
-      slug: doc.slug,
-      precio: doc.precio,
-      moneda: doc.moneda ?? "USD",
-      id,
-    };
-  }
-
   private montarDescripcion(
     item: ItemCompra,
     tipo: TipoProducto,
@@ -295,8 +290,9 @@ export class PagoService {
   }
 
   /**
-   * Aceptar y pagar una solicitud de función adicional desde el entorno.
-   * Crea el pago pendiente (tipoProducto "funcionalidad") y devuelve la URL.
+   * Aceptar una solicitud de función adicional desde el entorno.
+   * Crea el pago pendiente (tipoProducto "funcionalidad") con su código único;
+   * el cliente elige el método en la página de pago del portal.
    * Solo puede existir un pago en curso por solicitud.
    */
   async checkoutSolicitud(
@@ -328,7 +324,7 @@ export class PagoService {
     const enCurso = await PagoModel.findOne({
       tipoProducto: "funcionalidad",
       productoId: solicitudId,
-      estado: { $in: ["pending", "paid"] },
+      estado: { $in: ["pending", "en_revision", "rechazado", "paid"] },
     });
     if (enCurso) {
       throw ApiError.conflict(
@@ -356,6 +352,7 @@ export class PagoService {
 
     const pago = await PagoModel.create({
       tipoProducto: "funcionalidad",
+      tipoPago: "funcionalidad",
       paqueteSlug: solicitud.titulo.slice(0, 60),
       productoSlug: solicitud.titulo,
       productoId: solicitudId,
@@ -366,122 +363,570 @@ export class PagoService {
       emailCliente,
       clienteId,
       estado: "pending",
+      codigo: await this.generarCodigo(),
       metadata: { solicitudId },
     });
-
-    const resultado: PaymentResult = await this.crearCheckoutConFallback({
-      amount: monto,
-      currency: "USD",
-      description: pago.descripcion,
-      clientEmail: emailCliente,
-      metadata: {
-        pagoId: String(pago._id),
-        tipoProducto: "funcionalidad",
-      },
-    });
-
-    if (resultado.paymentId) {
-      pago.referencia = resultado.paymentId;
-      await pago.save();
-    }
 
     logger.exito("PagoService.checkoutSolicitud completado", {
       pagoId: String(pago._id),
       monto,
-      urlPago: resultado.checkoutUrl ? "generada" : null,
     });
-    return { urlPago: resultado.checkoutUrl, pago: toJson(pago.toObject()) };
+    return { urlPago: null, pago: toJson(pago.toObject()) };
   }
 
   /**
-   * Intenta con la pasarela activa; si falla, cae a ePayco (multi-proveedor).
+   * Admin: habilita un pago para el cliente (etapa del plan o sesiones de
+   * consultoría). Genera el código único que el cliente escribe en su
+   * transacción y le avisa por correo y por la campana del portal.
    */
-  private async crearCheckoutConFallback(
-    params: Parameters<PaymentProvider["createCheckout"]>[0],
-  ): Promise<PaymentResult> {
-    try {
-      return await this.provider.createCheckout(params);
-    } catch (errorPrimario) {
-      logger.fracaso(
-        "PagoService.crearCheckoutConFallback: pasarela activa falló",
-        {
-          error: (errorPrimario as Error).message,
-        },
-      );
-      if (process.env.PAYMENT_PROVIDER === "mercadopago") {
-        try {
-          const { EpaycoPaymentProvider } =
-            await import("../adapters/payment/epayco/epayco-payment.provider");
-          const ePayco = new EpaycoPaymentProvider();
-          const resultado = await ePayco.createCheckout(params);
-          logger.exito(
-            "PagoService.crearCheckoutConFallback: reemplazo por ePayco OK",
-            { checkoutUrl: resultado.checkoutUrl ? "generada" : null },
-          );
-          return resultado;
-        } catch {
-          // si ePayco tampoco está configurado, se devuelve el error original
-        }
-      }
-      throw errorPrimario;
+  async solicitarPago(
+    data: {
+      proyectoId?: string;
+      espacioId?: string;
+      etapaId?: string;
+      tipoPago: "etapa" | "sesiones";
+      monto: number;
+      cantidad?: number;
+      descripcion?: string;
+    },
+    adminId: string,
+  ): Promise<PagoJson> {
+    logger.proceso("PagoService.solicitarPago", {
+      tipoPago: data.tipoPago,
+      etapaId: data.etapaId,
+    });
+    if (!data.proyectoId && !data.espacioId) {
+      throw ApiError.validation("Indica el proyecto o el espacio a cobrar");
     }
-  }
+    if (!(data.monto > 0)) {
+      throw ApiError.validation("El monto debe ser mayor a 0");
+    }
 
-  /**
-   * Si el email no existe: crea la cuenta (rol cliente, activo).
-   * Si existe: valida la contraseña. Las cuentas admin no pueden comprar.
-   */
-  private async resolverOCrearCliente(data: {
-    email: string;
-    nombre?: string;
-    password?: string;
-  }): Promise<string> {
-    const existente = await UserModel.findOne({ email: data.email }).select(
-      "+passwordHash",
-    );
-    if (existente) {
-      if (existente.rol !== "cliente") {
-        throw ApiError.validation(
-          "Las cuentas de administrador no pueden comprar",
-        );
+    let tipoProducto: TipoProducto = "paquete";
+    let emailCliente = "";
+    let clienteId: string | null = null;
+    let moneda = "USD";
+    let paqueteSlug = "";
+    let productoSlug = "";
+    let concepto = data.descripcion ?? "";
+    const cantidad =
+      data.tipoPago === "sesiones"
+        ? Math.max(1, Math.floor(data.cantidad ?? 1))
+        : 1;
+
+    if (data.proyectoId) {
+      const proyecto = await ProyectoModel.findById(data.proyectoId);
+      if (!proyecto) throw ApiError.notFound("Proyecto no encontrado");
+      tipoProducto = "paquete";
+      paqueteSlug = proyecto.paquete?.slug ?? "";
+      moneda = proyecto.moneda ?? "USD";
+      clienteId = String(proyecto.clienteId);
+      const usuario = await UserModel.findById(proyecto.clienteId).lean();
+      emailCliente = usuario?.email ?? "";
+      if (data.tipoPago === "etapa") {
+        if (!data.etapaId) {
+          throw ApiError.validation("Falta la etapa a cobrar");
+        }
+        const etapas = proyecto.etapas as unknown as Array<{
+          _id: unknown;
+          nombre: string;
+          pagoEstado: string;
+        }>;
+        const etapa = etapas.find((e) => String(e._id) === data.etapaId);
+        if (!etapa) throw ApiError.notFound("Etapa no encontrada");
+        if (etapa.pagoEstado === "pagado") {
+          throw ApiError.conflict("Esta etapa ya está pagada");
+        }
+        concepto = concepto || `Etapa: ${etapa.nombre}`;
       }
-      if (
-        !data.password ||
-        !bcrypt.compareSync(data.password, existente.passwordHash)
-      ) {
-        logger.fracaso(
-          "PagoService.resolverOCrearCliente: contraseña incorrecta",
+    } else if (data.espacioId) {
+      const espacio = await EspacioModel.findById(data.espacioId);
+      if (!espacio) throw ApiError.notFound("Espacio no encontrado");
+      tipoProducto = espacio.tipoProducto;
+      productoSlug = espacio.productoSlug;
+      moneda = espacio.moneda ?? "USD";
+      clienteId = String(espacio.clienteId);
+      const usuario = await UserModel.findById(espacio.clienteId).lean();
+      emailCliente = usuario?.email ?? "";
+      if (data.tipoPago === "etapa") {
+        if (!data.etapaId) {
+          throw ApiError.validation("Falta la etapa a cobrar");
+        }
+        const etapas = espacio.etapas as unknown as Array<{
+          _id: unknown;
+          nombre: string;
+          pagoEstado: string;
+        }>;
+        const etapa = etapas.find((e) => String(e._id) === data.etapaId);
+        if (!etapa) throw ApiError.notFound("Etapa no encontrada");
+        if (etapa.pagoEstado === "pagado") {
+          throw ApiError.conflict("Esta etapa ya está pagada");
+        }
+        concepto = concepto || `Etapa: ${etapa.nombre}`;
+      }
+    }
+
+    if (!emailCliente) {
+      throw ApiError.validation("El cliente no tiene email registrado");
+    }
+
+    if (data.etapaId) {
+      const enCurso = await PagoModel.findOne({
+        etapaId: data.etapaId,
+        estado: { $in: ["pending", "en_revision"] },
+      });
+      if (enCurso) {
+        throw ApiError.conflict("Esta etapa ya tiene un pago en curso");
+      }
+    }
+
+    const codigo = await this.generarCodigo();
+    const pago = await PagoModel.create({
+      tipoProducto,
+      tipoPago: data.tipoPago,
+      paqueteSlug,
+      productoSlug,
+      cantidad,
+      descripcion: concepto || "Pago de proyecto",
+      monto: data.monto,
+      moneda,
+      emailCliente,
+      clienteId,
+      estado: "pending",
+      codigo,
+      solicitadoPor: adminId,
+      proyectoId: data.proyectoId ?? null,
+      espacioId: data.espacioId ?? null,
+      etapaId: data.etapaId ?? "",
+    });
+
+    if (data.etapaId) {
+      if (data.proyectoId) {
+        await ProyectoModel.updateOne(
+          { _id: data.proyectoId, "etapas._id": data.etapaId },
           {
-            email: data.email,
+            $set: {
+              "etapas.$.pagoEstado": "solicitado",
+              "etapas.$.pagoId": pago._id,
+            },
           },
         );
-        throw ApiError.unauthorized(
-          "Ya existe una cuenta con este email. Inicia sesión con tu contraseña.",
+      } else if (data.espacioId) {
+        await EspacioModel.updateOne(
+          { _id: data.espacioId, "etapas._id": data.etapaId },
+          {
+            $set: {
+              "etapas.$.pagoEstado": "solicitado",
+              "etapas.$.pagoId": pago._id,
+            },
+          },
         );
       }
-      return String(existente._id);
     }
 
-    if (!data.nombre || !data.password) {
+    try {
+      const usuario = clienteId
+        ? await UserModel.findById(clienteId).lean()
+        : null;
+      if (usuario?.email) {
+        await this.notificaciones.enviarPagoSolicitado({
+          email: usuario.email,
+          cliente: usuario.nombre,
+          concepto: pago.descripcion,
+          monto: pago.monto,
+          moneda: pago.moneda,
+          codigo,
+        });
+      }
+      if (clienteId) {
+        const { notificacionService } = await import("./notificacion.service");
+        await notificacionService.crearCliente(clienteId, {
+          tipo: "proyecto",
+          titulo: "Pago habilitado",
+          cuerpo: `${pago.descripcion} · $${pago.monto} ${pago.moneda} · código ${codigo}`,
+          contexto: "compra",
+          contextoId: pago._id,
+          creadaPor: adminId,
+        });
+      }
+    } catch (error) {
+      logger.fracaso("PagoService.solicitarPago: notificación falló", {
+        error: (error as Error).message,
+      });
+    }
+
+    logger.exito("PagoService.solicitarPago completado", {
+      pagoId: String(pago._id),
+      codigo,
+    });
+    return toJson(pago.toObject());
+  }
+
+  /**
+   * Cliente: elige el método de pago. PayPal devuelve la URL de aprobación;
+   * los métodos manuales devuelven instrucciones y el monto en COP congelado.
+   */
+  async elegirMetodo(
+    pagoId: string,
+    clienteId: string,
+    claveMetodo: string,
+  ): Promise<{
+    pago: PagoJson;
+    metodo: MetodoPagoJson;
+    montoCop: number | null;
+    urlPago: string | null;
+  }> {
+    logger.proceso("PagoService.elegirMetodo", { pagoId, claveMetodo });
+    const pago = await PagoModel.findOne({ _id: pagoId, clienteId });
+    if (!pago) throw ApiError.notFound("Pago no encontrado");
+    if (["paid", "refunded"].includes(pago.estado)) {
+      throw ApiError.conflict("Este pago ya está cerrado");
+    }
+
+    const metodo = await metodoPagoService.obtenerPorClave(claveMetodo);
+    pago.metodoPago = metodo.clave;
+
+    let montoCop: number | null = null;
+    if (metodo.moneda === "COP") {
+      // La tasa se congela una sola vez por pago; no se recalcula al re-elegir.
+      if (pago.montoCop == null) {
+        const cms = await CmsConfigModel.findOne({}).lean();
+        const tasa = cms?.tasaCop ?? 0;
+        if (tasa > 0) {
+          pago.montoCop = Math.ceil(pago.monto * tasa);
+        }
+      }
+      montoCop = pago.montoCop ?? null;
+    }
+
+    let urlPago: string | null = null;
+    if (metodo.tipo === "paypal") {
+      const resultado = await this.provider.createCheckout({
+        amount: pago.monto,
+        currency: pago.moneda,
+        description: pago.descripcion,
+        clientEmail: pago.emailCliente,
+        metadata: { pagoId: String(pago._id) },
+      });
+      if (resultado.paymentId) pago.referencia = resultado.paymentId;
+      urlPago = resultado.checkoutUrl;
+    }
+
+    await pago.save();
+    logger.exito("PagoService.elegirMetodo completado", {
+      pagoId,
+      metodo: metodo.clave,
+      urlPago: urlPago ? "generada" : null,
+    });
+    return { pago: toJson(pago.toObject()), metodo, montoCop, urlPago };
+  }
+
+  /** Cliente: sube el comprobante de una transferencia (imagen o PDF). */
+  async subirComprobante(
+    pagoId: string,
+    clienteId: string,
+    archivo: ArchivoSubido,
+    referenciaCliente?: string,
+  ): Promise<PagoJson> {
+    logger.proceso("PagoService.subirComprobante", { pagoId });
+    const pago = await PagoModel.findOne({ _id: pagoId, clienteId });
+    if (!pago) throw ApiError.notFound("Pago no encontrado");
+    if (["paid", "refunded"].includes(pago.estado)) {
+      throw ApiError.conflict("Este pago ya está cerrado");
+    }
+
+    const detectado = detectarTipoArchivo(archivo.buffer);
+    const permitidos: string[] = [...TIPOS_IMAGEN, TIPOS_ARCHIVO.pdf];
+    if (!detectado || !permitidos.includes(detectado.mimeType)) {
       throw ApiError.validation(
-        "Nombre y contraseña son obligatorios para crear tu cuenta",
+        "El comprobante debe ser una imagen JPG, PNG o WebP, o un PDF (verificado por contenido)",
       );
     }
-    const doc = await UserModel.create({
-      email: data.email,
-      passwordHash: bcrypt.hashSync(data.password, 12),
-      nombre: data.nombre.trim(),
-      rol: "cliente",
-      activo: true,
+
+    let buffer = archivo.buffer;
+    let mimeType = detectado.mimeType;
+    if (detectado.mimeType !== TIPOS_ARCHIVO.pdf) {
+      const optimizado = await optimizarImagen(
+        archivo.buffer,
+        detectado.mimeType,
+      );
+      buffer = optimizado.buffer;
+      mimeType = optimizado.mimeType;
+    }
+
+    const almacenado = await this.storage.upload({
+      buffer,
+      mimeType,
+      folder: `pagos/${pagoId}/comprobantes`,
     });
-    logger.exito(
-      "PagoService.resolverOCrearCliente: cuenta creada en el checkout",
-      {
-        email: data.email,
-        userId: String(doc._id),
-      },
-    );
-    return String(doc._id);
+    if (pago.comprobante?.publicId) {
+      await this.storage.delete(pago.comprobante.publicId);
+    }
+    pago.comprobante = {
+      url: almacenado.url,
+      publicId: almacenado.publicId,
+      nombre: archivo.nombre,
+      subidoEn: new Date(),
+    };
+    if (referenciaCliente) pago.referenciaCliente = referenciaCliente;
+    pago.estado = "en_revision";
+    pago.motivoRechazo = "";
+    await pago.save();
+
+    try {
+      const { notificacionService } = await import("./notificacion.service");
+      await notificacionService.crearAdmins({
+        tipo: "plataforma",
+        titulo: "Comprobante por verificar",
+        cuerpo: `${pago.descripcion} · $${pago.monto} ${pago.moneda} — ${pago.emailCliente}`,
+        contexto: "compra",
+        contextoId: pago._id,
+        creadaPor: clienteId,
+      });
+    } catch (error) {
+      logger.fracaso("PagoService.subirComprobante: notificación falló", {
+        error: (error as Error).message,
+      });
+    }
+
+    logger.exito("PagoService.subirComprobante completado", { pagoId });
+    return toJson(pago.toObject());
+  }
+
+  /** Admin: confirma un pago (idempotente) y aplica sus efectos. */
+  async confirmarPago(pagoId: string, adminId: string): Promise<PagoJson> {
+    logger.proceso("PagoService.confirmarPago", { pagoId });
+    const pago = await PagoModel.findById(pagoId);
+    if (!pago) throw ApiError.notFound("Pago no encontrado");
+    if (pago.estado === "paid") {
+      logger.exito("PagoService.confirmarPago: ya confirmado (idempotente)", {
+        pagoId,
+      });
+      return toJson(pago.toObject());
+    }
+    if (pago.estado === "refunded") {
+      throw ApiError.conflict("El pago fue reembolsado");
+    }
+
+    pago.estado = "paid";
+    pago.confirmadoPor = adminId as never;
+    await pago.save();
+
+    await this.aplicarPagoConfirmado(pago);
+    await this.notificarPagoConfirmado(pago);
+
+    logger.exito("PagoService.confirmarPago completado", { pagoId });
+    return toJson(pago.toObject());
+  }
+
+  /** Admin: rechaza el comprobante y avisa al cliente el motivo. */
+  async rechazarPago(
+    pagoId: string,
+    adminId: string,
+    motivo: string,
+  ): Promise<PagoJson> {
+    logger.proceso("PagoService.rechazarPago", { pagoId });
+    const pago = await PagoModel.findById(pagoId);
+    if (!pago) throw ApiError.notFound("Pago no encontrado");
+    if (pago.estado !== "en_revision") {
+      throw ApiError.validation(
+        "Solo se rechazan comprobantes que están en revisión",
+      );
+    }
+    pago.estado = "rechazado";
+    pago.motivoRechazo = motivo;
+    pago.confirmadoPor = adminId as never;
+    await pago.save();
+
+    try {
+      const usuario = pago.clienteId
+        ? await UserModel.findById(pago.clienteId).lean()
+        : null;
+      if (usuario?.email) {
+        await this.notificaciones.enviarPagoRechazado({
+          email: usuario.email,
+          cliente: usuario.nombre,
+          concepto: pago.descripcion,
+          motivo,
+        });
+      }
+      const { notificacionService } = await import("./notificacion.service");
+      await notificacionService.crearAdmins({
+        tipo: "plataforma",
+        titulo: "Pago rechazado",
+        cuerpo: `${pago.descripcion} · ${motivo}`,
+        contexto: "compra",
+        contextoId: pago._id,
+        creadaPor: adminId,
+      });
+    } catch (error) {
+      logger.fracaso("PagoService.rechazarPago: notificación falló", {
+        error: (error as Error).message,
+      });
+    }
+
+    logger.exito("PagoService.rechazarPago completado", { pagoId });
+    return toJson(pago.toObject());
+  }
+
+  /** Cliente: captura la orden de PayPal al volver del checkout. */
+  async capturarPaypal(pagoId: string, clienteId: string): Promise<PagoJson> {
+    logger.proceso("PagoService.capturarPaypal", { pagoId });
+    const pago = await PagoModel.findOne({ _id: pagoId, clienteId });
+    if (!pago) throw ApiError.notFound("Pago no encontrado");
+    if (pago.estado === "paid") {
+      return toJson(pago.toObject());
+    }
+    if (!pago.referencia) {
+      throw ApiError.validation("El pago no tiene una orden de PayPal");
+    }
+    if (!this.provider.capture) {
+      throw ApiError.badRequest(
+        "La pasarela activa no soporta captura de pagos",
+      );
+    }
+
+    const resultado = await this.provider.capture(pago.referencia);
+    if (resultado.status === "paid") {
+      // La referencia pasa a ser el id de captura (es lo que reembolsa PayPal).
+      if (resultado.paymentId) pago.referencia = resultado.paymentId;
+      pago.estado = "paid";
+      await pago.save();
+      await this.aplicarPagoConfirmado(pago);
+      await this.notificarPagoConfirmado(pago);
+    }
+
+    logger.exito("PagoService.capturarPaypal completado", {
+      pagoId,
+      estado: resultado.status,
+    });
+    return toJson(pago.toObject());
+  }
+
+  /** Admin: pagos con comprobante pendientes de verificación. */
+  async listarPorVerificar(): Promise<PagoJson[]> {
+    logger.proceso("PagoService.listarPorVerificar");
+    const docs = await PagoModel.find({ estado: "en_revision" })
+      .sort({ updatedAt: 1 })
+      .lean();
+    logger.exito("PagoService.listarPorVerificar completado", {
+      total: docs.length,
+    });
+    return docs.map(toJson);
+  }
+
+  /** Obtiene un pago del cliente (o cualquiera si es admin). */
+  async obtenerPago(
+    pagoId: string,
+    userId: string,
+    rol: "admin" | "cliente",
+  ): Promise<PagoJson> {
+    logger.proceso("PagoService.obtenerPago", { pagoId });
+    const pago =
+      rol === "admin"
+        ? await PagoModel.findById(pagoId).lean()
+        : await PagoModel.findOne({ _id: pagoId, clienteId: userId }).lean();
+    if (!pago) throw ApiError.notFound("Pago no encontrado");
+    logger.exito("PagoService.obtenerPago completado", { pagoId });
+    return toJson(pago);
+  }
+
+  /** Aplica los efectos del pago confirmado según su tipo. */
+  private async aplicarPagoConfirmado(pago: Pago & { _id: unknown }): Promise<{
+    estado: "paid";
+    onboarding?: { usuario?: string; proyecto?: string };
+  }> {
+    if (pago.tipoProducto === "funcionalidad") {
+      await this.marcarSolicitudPagada(pago);
+      const onboarding: { usuario?: string } = {};
+      if (pago.clienteId) onboarding.usuario = String(pago.clienteId);
+      return { estado: "paid", onboarding };
+    }
+
+    if (pago.proyectoId) {
+      const proyectoId = String(pago.proyectoId);
+      if (pago.etapaId) {
+        await proyectoService.marcarEtapaPagada(
+          proyectoId,
+          pago.etapaId,
+          pago._id as never,
+        );
+      }
+      await proyectoService.iniciarDesdePago(proyectoId, pago._id as never);
+      const onboarding: { usuario?: string; proyecto?: string } = {
+        proyecto: proyectoId,
+      };
+      if (pago.clienteId) onboarding.usuario = String(pago.clienteId);
+      return { estado: "paid", onboarding };
+    }
+
+    if (pago.espacioId) {
+      const espacioId = String(pago.espacioId);
+      if (pago.etapaId) {
+        await espacioService.marcarEtapaPagada(
+          espacioId,
+          pago.etapaId,
+          pago._id as never,
+        );
+      }
+      await espacioService.activarDesdePago(
+        espacioId,
+        pago._id as never,
+        pago.tipoPago === "sesiones" ? pago.cantidad : undefined,
+      );
+      const onboarding: { usuario?: string } = {};
+      if (pago.clienteId) onboarding.usuario = String(pago.clienteId);
+      return { estado: "paid", onboarding };
+    }
+
+    // Pagos de catálogo sin entorno previo (flujo legado del webhook).
+    return this.ejecutarOnboarding(pago);
+  }
+
+  /** Correo + campana de pago confirmado. */
+  private async notificarPagoConfirmado(
+    pago: Pago & { _id: unknown },
+  ): Promise<void> {
+    try {
+      const usuario = pago.clienteId
+        ? await UserModel.findById(pago.clienteId).lean()
+        : null;
+      if (usuario?.email) {
+        await this.notificaciones.enviarPagoConfirmado({
+          email: usuario.email,
+          cliente: usuario.nombre,
+          concepto: pago.descripcion,
+          monto: pago.monto,
+          moneda: pago.moneda,
+        });
+      }
+      const { notificacionService } = await import("./notificacion.service");
+      await notificacionService.crearAdmins({
+        tipo: "plataforma",
+        titulo: "Pago confirmado",
+        cuerpo: `${pago.descripcion} · $${pago.monto} ${pago.moneda}`,
+        contexto: "compra",
+        contextoId: pago._id,
+      });
+    } catch (error) {
+      logger.fracaso("PagoService.notificarPagoConfirmado falló", {
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  /** Código corto único para el mensaje de la transacción (ej. DJ-4F7K2). */
+  private async generarCodigo(): Promise<string> {
+    const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    for (let intento = 0; intento < 5; intento += 1) {
+      let codigo = "DJ-";
+      for (let i = 0; i < 5; i += 1) {
+        codigo += alfabeto[randomInt(alfabeto.length)];
+      }
+      const existe = await PagoModel.exists({ codigo });
+      if (!existe) return codigo;
+    }
+    throw ApiError.internal("No se pudo generar el código del pago");
   }
 
   /**
@@ -541,7 +986,7 @@ export class PagoService {
     });
 
     if (evento.status === "paid") {
-      return this.ejecutarOnboarding(pago);
+      return this.aplicarPagoConfirmado(pago);
     }
 
     return { estado: evento.status };
@@ -656,7 +1101,7 @@ export class PagoService {
       metadata?: unknown;
     },
     clienteId: string,
-  ): Promise<Date> {
+  ): Promise<Date | null> {
     if (!pago.paqueteId) {
       throw new Error(
         `No se puede crear el proyecto del pago ${String(pago._id)}: sin paqueteId`,
@@ -674,7 +1119,7 @@ export class PagoService {
       datosPago,
       clienteId,
     );
-    return proyecto.fechaEntrega;
+    return proyecto.fechaEntrega ?? null;
   }
 
   /** Funcionalidad pagada → solicitud "pagada" y la vista queda lista. */

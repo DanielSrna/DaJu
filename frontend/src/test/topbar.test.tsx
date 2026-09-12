@@ -53,6 +53,10 @@ describe("TopBar con admin", () => {
     expect(
       screen.getByRole("button", { name: /cerrar sesión/i }),
     ).toBeInTheDocument();
+    // El acceso a la plataforma vive en la vitrina (no dentro de la plataforma).
+    expect(
+      screen.getByRole("link", { name: /ir a daju plataform/i }),
+    ).toHaveAttribute("href", "/cliente");
     expect(screen.queryByRole("link", { name: /iniciar sesión/i })).not.toBeInTheDocument();
   });
 

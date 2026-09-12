@@ -192,6 +192,10 @@ export function Home() {
                 valor="Desde una landing que te lanza, hasta un panel con métricas para tomar decisiones. Sin tecnicismos: tú describes tu negocio, nosotros lo convertimos en una web lista para crecer."
               />
             </p>
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--brand-acento)]/40 bg-[var(--brand-acento)]/10 px-4 py-2 text-sm font-semibold text-[var(--brand-acento)]">
+              <Sparkles className="size-4" />
+              La fase de planeación y diseño es completamente gratis
+            </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Button asChild variant="accent" size="lg">
                 <Link to="/productos">

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ArrowRight, Check, Clock, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CotizarModal } from "@/components/vitrina/cotizar-modal";
 import { TextoEnriquecido } from "@/components/editor/editor-texto";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/cliente";
@@ -36,6 +37,7 @@ export function DetalleProducto() {
   const { slug } = useParams<{ slug: string }>();
   const [paquete, setPaquete] = useState<Paquete | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cotizarAbierto, setCotizarAbierto] = useState(false);
   const { cms } = useTema();
 
   useEffect(() => {
@@ -140,12 +142,18 @@ export function DetalleProducto() {
               )}
               <span className="text-base font-normal text-muted-foreground"> USD</span>
             </p>
-            <Button asChild variant="accent" className="mt-3 w-full" size="lg">
-              <Link to={`/productos/${paquete.slug}/comprar`}>
-                Comprar ahora
-                <ArrowRight />
-              </Link>
+            <Button
+              variant="accent"
+              className="mt-3 w-full"
+              size="lg"
+              onClick={() => setCotizarAbierto(true)}
+            >
+              Cotizar este paquete
+              <ArrowRight />
             </Button>
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">
+              Planeación y diseño gratis
+            </p>
           </div>
         </div>
       </div>
@@ -221,18 +229,30 @@ export function DetalleProducto() {
           </div>
           <div className="rounded-xl border p-5">
             <p className="text-sm text-muted-foreground">
-              Puedes sumar funcionalidades en el siguiente paso (cada una incluye
-              su propia vista).
+              Empiezas gratis: en tu entorno conversamos el alcance y las
+              funcionalidades que necesitas antes de pagar.
             </p>
-            <Button asChild variant="accent" className="mt-3 w-full">
-              <Link to={`/productos/${paquete.slug}/comprar`}>
-                Personalizar y comprar
-                <ArrowRight />
-              </Link>
+            <Button
+              variant="accent"
+              className="mt-3 w-full"
+              onClick={() => setCotizarAbierto(true)}
+            >
+              Cotizar este paquete
+              <ArrowRight />
             </Button>
           </div>
         </aside>
       </div>
+
+      <CotizarModal
+        tipo="paquete"
+        productoId={paquete.id}
+        nombre={paquete.nombre}
+        precio={precioFinal}
+        moneda={paquete.moneda}
+        abierto={cotizarAbierto}
+        onCambiar={setCotizarAbierto}
+      />
     </div>
   );
 }

@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/cliente";
 import type { ResumenPortal } from "@/lib/api/tipos";
 
-const ESTADOS = ["recibido", "diseno", "desarrollo", "entregado"];
+const ESTADOS = ["planeacion", "recibido", "diseno", "desarrollo", "despliegue", "entregado"];
 const ETIQUETA: Record<string, string> = {
+  planeacion: "Planeación",
   recibido: "Recibido",
   diseno: "Diseño",
   desarrollo: "Desarrollo",
+  despliegue: "Despliegue",
   entregado: "Entregado",
+  pausado: "Pausado",
+  cancelado: "Cancelado",
 };
 
 interface ProyectoRow {
@@ -17,7 +21,10 @@ interface ProyectoRow {
   cliente: { nombre: string; email: string };
   paquete: { nombre: string; slug: string; tipo: string; soporteMeses: number };
   estado: string;
-  fechaEntrega: string;
+  fechaCompra: string | null;
+  fechaEntrega: string | null;
+  precioBase: number;
+  moneda: string;
 }
 
 /** Centro de administración: TODOS los proyectos (paquetes, plantillas y servicios). */
@@ -44,14 +51,30 @@ export function CentroProyectos() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtro]);
 
-  const mover = async (p: ProyectoRow, estado: string): Promise<void> => {
+  const mover = async (
+    p: ProyectoRow,
+    estado: string,
+    forzar = false,
+  ): Promise<void> => {
     setMoviedo(p.id);
     setError(null);
     try {
-      await api.moverEstadoProyecto(p.id, estado);
+      await api.moverEstadoProyecto(p.id, estado, forzar);
       cargar();
     } catch (e) {
-      setError((e as Error).message);
+      const err = e as Error & { code?: string };
+      // Etapas sin pagar: el admin puede forzar la entrega (queda auditado).
+      if (err.code === "PAYMENT_REQUIRED" && estado === "entregado") {
+        if (
+          window.confirm(
+            `${err.message}\n\n¿Forzar la entrega de todos modos? Quedará registrado en la bitácora.`,
+          )
+        ) {
+          await mover(p, estado, true);
+          return;
+        }
+      }
+      setError(err.message);
     } finally {
       setMoviedo(null);
     }
@@ -112,7 +135,13 @@ export function CentroProyectos() {
                         </span>
                       </h3>
                       <p className="text-xs text-muted-foreground">
-                        Entrega: {new Date(p.fechaEntrega).toLocaleDateString("es-CO")} · Soporte {p.paquete.soporteMeses} meses
+                        Entrega:{" "}
+                        {p.fechaEntrega
+                          ? new Date(p.fechaEntrega).toLocaleDateString("es-CO")
+                          : "Por definir"}{" "}
+                        · Soporte {p.paquete.soporteMeses} meses · Precio
+                        elegido: ${(p.precioBase ?? 0).toLocaleString("es-CO")}{" "}
+                        {p.moneda}
                       </p>
                     </div>
                     <span className="rounded-full bg-[var(--brand-primario)]/[0.08] px-2.5 py-1 text-xs font-semibold text-[var(--brand-primario)]">
@@ -154,6 +183,50 @@ export function CentroProyectos() {
                     >
                       <History className="size-3.5" /> Ir al entorno
                     </Button>
+                    {!["pausado", "cancelado", "entregado"].includes(p.estado) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={moviedo === p.id}
+                        onClick={() => void mover(p, "pausado")}
+                      >
+                        Pausar
+                      </Button>
+                    )}
+                    {p.estado === "pausado" && (
+                      <Button
+                        variant="accent"
+                        size="sm"
+                        disabled={moviedo === p.id}
+                        onClick={() =>
+                          void mover(
+                            p,
+                            p.fechaCompra ? "recibido" : "planeacion",
+                          )
+                        }
+                      >
+                        Reanudar
+                      </Button>
+                    )}
+                    {!["cancelado", "entregado"].includes(p.estado) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600"
+                        disabled={moviedo === p.id}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `¿Cancelar el proyecto de ${p.cliente.nombre}?`,
+                            )
+                          ) {
+                            void mover(p, "cancelado");
+                          }
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    )}
                   </div>
                 </article>
               );

@@ -15,6 +15,9 @@ interface SolicitudJson {
   descripcion: string;
   estado: "abierta" | "respondida" | "aceptada" | "pagada";
   costo: number;
+  costoSugerido: number;
+  origen: "personalizada" | "catalogo";
+  catalogoClave: string;
   respuestaAdmin: string;
   createdAt: Date;
 }
@@ -28,6 +31,9 @@ function toJson(doc: Record<string, unknown>): SolicitudJson {
     descripcion: String(doc.descripcion),
     estado: (doc.estado as SolicitudJson["estado"]) ?? "abierta",
     costo: Number(doc.costo ?? 0),
+    costoSugerido: Number(doc.costoSugerido ?? 0),
+    origen: (doc.origen as SolicitudJson["origen"]) ?? "personalizada",
+    catalogoClave: String(doc.catalogoClave ?? ""),
     respuestaAdmin: String(doc.respuestaAdmin ?? ""),
     createdAt: doc.createdAt as Date,
   };
@@ -75,7 +81,13 @@ export class SolicitudFuncionService {
   async crear(
     filtro: Filtro,
     clienteId: string,
-    datos: { titulo: string; descripcion: string },
+    datos: {
+      titulo: string;
+      descripcion: string;
+      costoSugerido?: number;
+      origen?: "personalizada" | "catalogo";
+      catalogoClave?: string;
+    },
   ): Promise<SolicitudJson> {
     logger.proceso("SolicitudFuncionService.crear", { filtro });
     await verificarPropietario(filtro, clienteId);
@@ -87,6 +99,9 @@ export class SolicitudFuncionService {
       descripcion: datos.descripcion,
       estado: "abierta",
       costo: 0,
+      costoSugerido: datos.costoSugerido ?? 0,
+      origen: datos.origen ?? "personalizada",
+      catalogoClave: datos.catalogoClave ?? "",
       respuestaAdmin: "",
     });
     try {

@@ -1,8 +1,13 @@
 import { Router } from "express";
 import { body, param, query } from "express-validator";
 import { proyectoController } from "../../controllers/proyecto.controller";
-import { authMiddleware, requireRol } from "../../middlewares/auth.middleware";
+import {
+  authMiddleware,
+  requireEmailVerificado,
+  requireRol,
+} from "../../middlewares/auth.middleware";
 import { validate } from "../../middlewares/validate.middleware";
+import { montarRutasEtapas } from "./etapa.routes";
 
 const router = Router();
 
@@ -29,6 +34,7 @@ const router = Router();
 router.get(
   "/proyectos",
   authMiddleware,
+  requireEmailVerificado,
   proyectoController.listarMios.bind(proyectoController),
 );
 
@@ -115,6 +121,7 @@ router.get(
 router.get(
   "/proyectos/:id",
   authMiddleware,
+  requireEmailVerificado,
   param("id").isMongoId(),
   validate,
   proyectoController.obtener.bind(proyectoController),
@@ -185,7 +192,17 @@ router.put(
   authMiddleware,
   requireRol("admin"),
   param("id").isMongoId(),
-  body("estado").isIn(["diseno", "desarrollo", "entregado"]),
+  body("estado").isIn([
+    "planeacion",
+    "recibido",
+    "diseno",
+    "desarrollo",
+    "despliegue",
+    "entregado",
+    "pausado",
+    "cancelado",
+  ]),
+  body("forzar").optional().isBoolean(),
   validate,
   proyectoController.cambiarEstado.bind(proyectoController),
 );
@@ -313,5 +330,8 @@ router.put(
   validate,
   proyectoController.actualizarCapacidad.bind(proyectoController),
 );
+
+// Plan de etapas del proyecto (barra de progreso personalizable).
+montarRutasEtapas(router, "proyectos", "proyecto");
 
 export default router;

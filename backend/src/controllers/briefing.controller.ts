@@ -66,6 +66,12 @@ export class BriefingController {
         req.user.rol,
         req.user.id,
         nombre.slice(0, 100),
+        typeof req.body.costoSugerido === "number"
+          ? req.body.costoSugerido
+          : undefined,
+        typeof req.body.requisitos === "string"
+          ? req.body.requisitos.slice(0, 500)
+          : undefined,
       );
       res.status(201).json({ briefing });
     } catch (error) {

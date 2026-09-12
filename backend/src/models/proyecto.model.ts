@@ -5,6 +5,7 @@ import {
   HydratedDocument,
   Types,
 } from "mongoose";
+import { etapaSchema } from "./etapa.schema";
 
 const proyectoSchema = new Schema(
   {
@@ -14,7 +15,13 @@ const proyectoSchema = new Schema(
       required: true,
       index: true,
     },
-    pagoId: { type: Types.ObjectId, ref: "Pago", required: true, unique: true },
+    pagoId: {
+      type: Types.ObjectId,
+      ref: "Pago",
+      unique: true,
+      sparse: true,
+      comment: "Primer pago confirmado; nulo mientras está en planeación",
+    },
     paquete: {
       slug: { type: String, required: true },
       nombre: { type: String, required: true },
@@ -29,20 +36,45 @@ const proyectoSchema = new Schema(
     },
     estado: {
       type: String,
-      enum: ["recibido", "diseno", "desarrollo", "entregado"],
-      default: "recibido",
+      enum: [
+        "planeacion",
+        "recibido",
+        "diseno",
+        "desarrollo",
+        "despliegue",
+        "entregado",
+        "pausado",
+        "cancelado",
+      ],
+      default: "planeacion",
       index: true,
     },
-    fechaCompra: { type: Date, required: true },
+    fechaCompra: {
+      type: Date,
+      default: null,
+      comment: "Se congela al confirmar el primer pago",
+    },
     fechaEntrega: {
       type: Date,
-      required: true,
+      default: null,
       comment: "Compra + días hábiles (congelada)",
     },
     fechaEntregado: {
       type: Date,
       default: null,
       comment: "Inicia la garantía (soporte)",
+    },
+    precioBase: {
+      type: Number,
+      default: 0,
+      min: 0,
+      comment: "Precio de catálogo al registrar (referencia de la propuesta)",
+    },
+    moneda: { type: String, default: "USD", trim: true },
+    etapas: {
+      type: [etapaSchema],
+      default: [],
+      comment: "Plan de trabajo libre definido por el admin",
     },
     funcionalidades: {
       type: [

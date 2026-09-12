@@ -16,11 +16,12 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
-interface PublicUser {
+export interface PublicUser {
   id: string;
   email: string;
   nombre: string;
   rol: "admin" | "cliente";
+  emailVerificado: boolean;
 }
 
 function toPublicUser(user: {
@@ -28,12 +29,14 @@ function toPublicUser(user: {
   email: string;
   nombre: string;
   rol: "admin" | "cliente";
+  emailVerificado?: boolean;
 }): PublicUser {
   return {
     id: String(user._id),
     email: user.email,
     nombre: user.nombre,
     rol: user.rol,
+    emailVerificado: user.emailVerificado ?? true,
   };
 }
 
@@ -65,7 +68,10 @@ export class AuthService {
       passwordHash,
       nombre: data.nombre.trim(),
       rol: "cliente",
+      emailVerificado: false,
     });
+
+    await this.enviarVerificacion(doc);
 
     const user = toPublicUser(doc);
     const tokens = issueTokens({ id: user.id, rol: user.rol });
@@ -143,6 +149,114 @@ export class AuthService {
     const user = toPublicUser(doc);
     logger.exito("AuthService.getMe completado", { userId });
     return user;
+  }
+
+  /** Emite una sesión nueva para un usuario ya validado (cotización). */
+  async emitirSesion(
+    userId: string,
+  ): Promise<{ user: PublicUser; tokens: AuthTokens }> {
+    logger.proceso("AuthService.emitirSesion", { userId });
+    const doc = await UserModel.findById(userId);
+    if (!doc || !doc.activo) {
+      logger.fracaso("AuthService.emitirSesion: usuario no válido", { userId });
+      throw ApiError.unauthorized("Cuenta no disponible");
+    }
+    const user = toPublicUser(doc);
+    const tokens = issueTokens({ id: user.id, rol: user.rol });
+    logger.exito("AuthService.emitirSesion completado", { userId });
+    return { user, tokens };
+  }
+
+  /** Genera token de verificación (24 h) y envía el correo. */
+  async enviarVerificacion(usuario: {
+    _id: unknown;
+    email: string;
+    nombre: string;
+    emailVerificacionToken?: string;
+    emailVerificacionExpira?: Date | null;
+    save(): Promise<unknown>;
+  }): Promise<void> {
+    logger.proceso("AuthService.enviarVerificacion", {
+      userId: String(usuario._id),
+    });
+    const token = randomBytes(24).toString("base64url");
+    usuario.emailVerificacionToken = token;
+    usuario.emailVerificacionExpira = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    );
+    await usuario.save();
+
+    try {
+      const { notificacionesService } =
+        await import("./notificaciones.service");
+      await notificacionesService.enviarVerificacionEmail({
+        email: usuario.email,
+        nombre: usuario.nombre,
+        token,
+      });
+    } catch (error) {
+      logger.fracaso("AuthService.enviarVerificacion: falló el correo", {
+        error: (error as Error).message,
+      });
+    }
+    logger.exito("AuthService.enviarVerificacion completado", {
+      userId: String(usuario._id),
+    });
+  }
+
+  /** Confirma el email con el token del correo (válido por 24 h). */
+  async verificarEmail(token: string): Promise<PublicUser> {
+    logger.proceso("AuthService.verificarEmail");
+    const usuario = await UserModel.findOne({
+      emailVerificacionToken: token,
+      emailVerificacionExpira: { $gt: new Date() },
+    }).select("+emailVerificacionToken +emailVerificacionExpira");
+    if (!usuario) {
+      logger.fracaso("AuthService.verificarEmail: token inválido o expirado");
+      throw ApiError.badRequest(
+        "El enlace de verificación no es válido o ya expiró (24 horas)",
+      );
+    }
+    usuario.emailVerificado = true;
+    usuario.emailVerificacionToken = "";
+    usuario.emailVerificacionExpira = null;
+    await usuario.save();
+    logger.exito("AuthService.verificarEmail completado", {
+      userId: String(usuario._id),
+    });
+    return toPublicUser(usuario);
+  }
+
+  /** Reenvía el correo de verificación (silencioso si no existe o ya está verificado). */
+  async reenviarVerificacion(email: string): Promise<void> {
+    logger.proceso("AuthService.reenviarVerificacion", { email });
+    const usuario = await UserModel.findOne({ email: email.toLowerCase() });
+    if (!usuario || usuario.emailVerificado) {
+      logger.exito(
+        "AuthService.reenviarVerificacion: sin envío (inexistente o verificado)",
+      );
+      return;
+    }
+    await this.enviarVerificacion(usuario);
+    logger.exito("AuthService.reenviarVerificacion completado", { email });
+  }
+
+  /** Admin: marca manualmente un correo como verificado. */
+  async verificarManual(userId: string): Promise<PublicUser> {
+    logger.proceso("AuthService.verificarManual", { userId });
+    const usuario = await UserModel.findById(userId);
+    if (!usuario) {
+      logger.fracaso("AuthService.verificarManual: usuario no encontrado", {
+        userId,
+      });
+      throw ApiError.notFound("Usuario no encontrado");
+    }
+    usuario.emailVerificado = true;
+    usuario.emailVerificacionToken = "";
+    usuario.emailVerificacionExpira = null;
+    await usuario.save();
+    logger.exito("AuthService.verificarManual completado", { userId });
+    return toPublicUser(usuario);
   }
 
   /** Genera token de restablecimiento (30 min) y envía el correo. */

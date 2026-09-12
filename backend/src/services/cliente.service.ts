@@ -43,29 +43,44 @@ export class ClienteService {
     ]);
 
     const estados: Record<string, string> = {
+      planeacion: "Planeación (gratis)",
       recibido: "Recibido",
       diseno: "Diseño",
       desarrollo: "Desarrollo",
+      despliegue: "Despliegue",
       entregado: "Entregado",
+      pausado: "Pausado",
+      cancelado: "Cancelado",
     };
     const progresos: Record<string, number> = {
+      planeacion: 0,
       recibido: 0,
       diseno: 1,
       desarrollo: 2,
+      despliegue: 2,
       entregado: 3,
     };
 
     return {
-      proyectos: proyectos.map((p) => ({
-        id: String(p._id),
-        nombre: p.paquete?.nombre ?? "Proyecto",
-        slug: p.paquete?.slug ?? "",
-        estado: estados[p.estado] ?? p.estado,
-        fechaEntrega: p.fechaEntrega
-          ? new Date(p.fechaEntrega).toISOString()
-          : null,
-        progreso: (progresos[p.estado] ?? 0) / 3,
-      })),
+      proyectos: proyectos.map((p) => {
+        const etapas = (p.etapas ?? []) as unknown as Array<{
+          estado: string;
+        }>;
+        const progreso = etapas.length
+          ? etapas.filter((e) => e.estado === "completada").length /
+            etapas.length
+          : (progresos[p.estado] ?? 0) / 3;
+        return {
+          id: String(p._id),
+          nombre: p.paquete?.nombre ?? "Proyecto",
+          slug: p.paquete?.slug ?? "",
+          estado: estados[p.estado] ?? p.estado,
+          fechaEntrega: p.fechaEntrega
+            ? new Date(p.fechaEntrega).toISOString()
+            : null,
+          progreso,
+        };
+      }),
       espacios: espacios.map((e) => ({
         id: String(e._id),
         tipoProducto: e.tipoProducto,

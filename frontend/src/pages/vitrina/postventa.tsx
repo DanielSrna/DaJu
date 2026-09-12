@@ -26,14 +26,14 @@ const PASOS = [
     titulo: "Seguimiento por etapas",
     clave: "postventa.paso2",
     texto:
-      "Tu proyecto pasa por recibido, diseño, desarrollo y entrega. Ves el avance y la fecha estimada en tu portal en todo momento.",
+      "Tu proyecto avanza por etapas que definimos contigo. Ves la barra de progreso y la fecha estimada en tu portal en todo momento.",
   },
   {
     icono: FileText,
     titulo: "Fecha de entrega congelada",
     clave: "postventa.paso3",
     texto:
-      "La fecha se fija el día de tu compra (días hábiles según el paquete), así sabes exactamente cuándo estará listo.",
+      "La fecha se fija el día de tu primer pago (días hábiles según el paquete), así sabes exactamente cuándo estará listo.",
   },
   {
     icono: LifeBuoy,
@@ -81,6 +81,10 @@ export function Postventa() {
           textos={textos}
           onGuardar={guardarTexto}
         />
+      </p>
+      <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--brand-acento)]/40 bg-[var(--brand-acento)]/10 px-4 py-2 text-sm font-semibold text-[var(--brand-primario)]">
+        <ClipboardList className="size-4 text-[var(--brand-acento)]" />
+        La fase de planeación y diseño es completamente gratis
       </p>
 
       <div className="mt-10 grid gap-6 md:grid-cols-2">

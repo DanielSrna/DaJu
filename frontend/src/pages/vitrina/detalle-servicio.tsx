@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ArrowRight, BadgeCheck, CalendarClock, Clock, MessageSquare, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CotizarModal } from "@/components/vitrina/cotizar-modal";
 import { TextoEnriquecido } from "@/components/editor/editor-texto";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/cliente";
@@ -26,7 +27,7 @@ const CATEGORIA_INFO: Record<
 };
 
 const PASOS = [
-  { titulo: "Paga tus sesiones", texto: "Compra el número de sesiones que necesites con la pasarela de siempre." },
+  { titulo: "Cotiza y crea tu cuenta", texto: "Regístrate con el servicio que te interesa y conversamos gratis qué necesitas." },
   { titulo: "Completa tu información", texto: "Sube los archivos y contexto que el equipo necesita para aprovechar la cita." },
   { titulo: "Agendamos la cita", texto: "Recibes el enlace de la videollamada (Meet o Zoom) y recordatorios antes de cada sesión." },
   { titulo: "Trabajo y seguimiento", texto: "En la sesión se resuelve lo concreto y al cerrar recibes un resumen de lo acordado." },
@@ -37,6 +38,7 @@ export function DetalleServicio() {
   const { slug } = useParams<{ slug: string }>();
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cotizarAbierto, setCotizarAbierto] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -162,24 +164,33 @@ export function DetalleServicio() {
           <span className="text-base font-normal text-muted-foreground"> USD</span>
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Por {servicio.canal} · Puedes comprar varias sesiones de golpe y reagendar.
+          Por {servicio.canal} · Coordinamos tus sesiones dentro de la
+          plataforma y pagas cuando esté claro el plan.
         </p>
         <Button
-          asChild
           variant="accent"
           size="lg"
           className="mt-5 w-full max-w-xs"
+          onClick={() => setCotizarAbierto(true)}
         >
-          <Link to={`/servicios/${servicio.slug}/comprar`}>
-            <CalendarClock className="size-4" />
-            Comprar bono de sesiones
-            <ArrowRight />
-          </Link>
+          <CalendarClock className="size-4" />
+          Cotizar mis sesiones
+          <ArrowRight />
         </Button>
         <p className="mt-2 text-xs text-muted-foreground">
           Sin permanencia: si algo no se resuelve, seguimos con otra sesión al mismo precio.
         </p>
       </aside>
+
+      <CotizarModal
+        tipo="servicio"
+        productoId={servicio.id}
+        nombre={servicio.nombre}
+        precio={servicio.precio}
+        moneda={servicio.moneda}
+        abierto={cotizarAbierto}
+        onCambiar={setCotizarAbierto}
+      />
     </div>
   );
 }

@@ -76,6 +76,20 @@ export function TopBar() {
                 </Button>
               </div>
             )}
+            {!modoEdicion && (
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 bg-white/15 text-white hover:bg-white/25 hover:text-white"
+              >
+                <Link to="/cliente">
+                  <Hammer className="size-3" />
+                  Ir a DaJu Plataform
+                  <ExternalLink className="size-3 opacity-60" />
+                </Link>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"

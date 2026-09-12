@@ -112,6 +112,22 @@ export class CmsController {
     }
   }
 
+  async actualizarTasaCop(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("CmsController.actualizarTasaCop");
+    try {
+      const resultado = await cmsService.actualizarTasaCop(
+        Number(req.body.tasaCop),
+      );
+      res.status(200).json(resultado);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async crearCarruselItem(
     req: Request,
     res: Response,

@@ -8,7 +8,7 @@ import {
   refreshTokenMaxAgeMs,
 } from "../utils/jwt";
 
-function setAuthCookies(
+export function setAuthCookies(
   res: Response,
   tokens: { accessToken: string; refreshToken: string },
 ): void {
@@ -53,12 +53,10 @@ export class AuthController {
     logger.proceso("AuthController.solicitarRestablecimiento");
     try {
       await authService.solicitarRestablecimiento(req.body.email);
-      res
-        .status(200)
-        .json({
-          ok: true,
-          mensaje: "Si el correo existe, recibirás un enlace en unos minutos.",
-        });
+      res.status(200).json({
+        ok: true,
+        mensaje: "Si el correo existe, recibirás un enlace en unos minutos.",
+      });
     } catch (error) {
       next(error);
     }
@@ -76,6 +74,54 @@ export class AuthController {
         req.body.password,
       );
       res.status(200).json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async verificarEmail(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("AuthController.verificarEmail");
+    try {
+      const user = await authService.verificarEmail(req.body.token);
+      res.status(200).json({ ok: true, user });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async reenviarVerificacion(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("AuthController.reenviarVerificacion");
+    try {
+      await authService.reenviarVerificacion(req.body.email);
+      res.status(200).json({
+        ok: true,
+        mensaje:
+          "Si la cuenta existe y no está verificada, recibirás el enlace.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async verificarManual(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    logger.proceso("AuthController.verificarManual", {
+      userId: req.params.id,
+    });
+    try {
+      const user = await authService.verificarManual(req.params.id);
+      res.status(200).json({ user });
     } catch (error) {
       next(error);
     }

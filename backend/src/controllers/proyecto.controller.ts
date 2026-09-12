@@ -96,6 +96,7 @@ export class ProyectoController {
         req.body.estado,
         req.user.rol,
         req.user.id,
+        req.body.forzar === true,
       );
       res.status(200).json({ proyecto });
     } catch (error) {

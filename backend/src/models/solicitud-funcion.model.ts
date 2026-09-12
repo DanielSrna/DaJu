@@ -39,6 +39,25 @@ const solicitudSchema = new Schema(
       min: 0,
       comment: "Costo propuesto a aceptar",
     },
+    costoSugerido: {
+      type: Number,
+      default: 0,
+      min: 0,
+      comment:
+        "Precio de catálogo sugerido cuando la solicitud viene de la lista predefinida",
+    },
+    origen: {
+      type: String,
+      enum: ["personalizada", "catalogo"],
+      default: "personalizada",
+      index: true,
+    },
+    catalogoClave: {
+      type: String,
+      default: "",
+      trim: true,
+      comment: "Clave de la funcionalidad del catálogo (si aplica)",
+    },
     respuestaAdmin: { type: String, default: "", maxlength: 4000, trim: true },
     respondidaPor: { type: Types.ObjectId, ref: "User", default: null },
   },

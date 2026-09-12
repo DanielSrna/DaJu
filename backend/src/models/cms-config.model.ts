@@ -36,6 +36,13 @@ const cmsConfigSchema = new Schema(
       hasta: { type: String, default: null, trim: true },
     },
     diasExtra: { type: Number, default: 0 },
+    tasaCop: {
+      type: Number,
+      default: 0,
+      min: 0,
+      comment:
+        "Pesos por dólar para pagos locales (Nequi, Bre-B, banco). 0 = sin conversión",
+    },
     editor: {
       type: Schema.Types.Mixed,
       default: {},

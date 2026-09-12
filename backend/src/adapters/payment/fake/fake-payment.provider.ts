@@ -29,6 +29,14 @@ export class FakePaymentProvider implements PaymentProvider {
     return;
   }
 
+  async capture(paymentId: string): Promise<PaymentResult> {
+    return {
+      paymentId,
+      status: "paid",
+      checkoutUrl: null,
+    };
+  }
+
   async handleWebhook(body: Record<string, unknown>): Promise<{
     eventType: string;
     paymentId: string;

@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Layers,
   MessageSquare,
+  PlusCircle,
   ShieldQuestion,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -120,8 +121,22 @@ export function Portal() {
       <p className="mt-2 max-w-2xl text-muted-foreground">
         {esAdmin
           ? "Todos los entornos de tus clientes: entra a cada uno para responder, subir obra gris o confirmar citas."
-          : "Cada familia que compras abre su propio espacio de trabajo. Las zonas bloqueadas también son tuyas cuando compres esa familia."}
+          : "Cada familia que compras abre su propio espacio de trabajo. Las zonas bloqueadas también son tuyas cuando compras esa familia."}
       </p>
+
+      {!esAdmin && (
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <Button asChild variant="accent" size="lg">
+            <Link to="/productos">
+              <PlusCircle className="size-4" />
+              Adquirir un nuevo producto
+            </Link>
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Ya tienes sesión: no vuelves a registrarte.
+          </span>
+        </div>
+      )}
 
       {esAdmin && metricas && (
         <section aria-label="Métricas de la plataforma" className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -149,6 +164,12 @@ export function Portal() {
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/cliente/pagos">Pagos y reembolsos</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/pagos">Verificar pagos</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/metodos-pago">Métodos de pago</Link>
           </Button>
         </nav>
       )}

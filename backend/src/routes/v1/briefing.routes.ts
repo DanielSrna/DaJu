@@ -209,6 +209,8 @@ router.post(
   authMiddleware,
   param("proyectoId").isMongoId(),
   body("nombre").isString().isLength({ min: 2, max: 100 }).trim(),
+  body("costoSugerido").optional().isFloat({ min: 0 }),
+  body("requisitos").optional().isString().isLength({ max: 500 }).trim(),
   validate,
   briefingController.agregarVista.bind(briefingController),
 );

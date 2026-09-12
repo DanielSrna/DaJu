@@ -162,6 +162,36 @@ router.delete(
   cmsController.eliminarCarruselItem.bind(cmsController),
 );
 
+/**
+ * @swagger
+ * /cms/tasa-cop:
+ *   put:
+ *     summary: Tasa USD→COP para pagos locales (admin)
+ *     description: Se publica al instante y se congela en cada pago.
+ *     tags: [CMS]
+ *     security: [cookieAuth: []]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tasaCop]
+ *             properties:
+ *               tasaCop: { type: number, minimum: 0, example: 4200 }
+ *     responses:
+ *       200:
+ *         description: Tasa actualizada
+ */
+router.put(
+  "/cms/tasa-cop",
+  authMiddleware,
+  requireRol("admin"),
+  body("tasaCop").isFloat({ min: 0, max: 100000 }).withMessage("Tasa inválida"),
+  validate,
+  cmsController.actualizarTasaCop.bind(cmsController),
+);
+
 const HEX_COLOR = /^#([0-9a-fA-F]{6})$/;
 
 /**
