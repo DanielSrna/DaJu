@@ -91,7 +91,9 @@ export async function requireEmailVerificado(
       next(ApiError.unauthorized());
       return;
     }
-    if (!usuario.emailVerificado) {
+    // Solo se bloquea el false explícito: las cuentas históricas (campo
+    // ausente) quedan verificadas, igual que en toPublicUser.
+    if (usuario.emailVerificado === false) {
       logger.fracaso("Acceso denegado: email sin verificar", {
         requestId: req.requestId,
         userId: req.user.id,

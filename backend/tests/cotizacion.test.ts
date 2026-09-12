@@ -267,4 +267,31 @@ describe("Cotización y verificación de email", () => {
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe("EMAIL_NO_VERIFICADO");
   });
+
+  it("una cuenta histórica sin campo emailVerificado entra al portal", async () => {
+    // Inserta directo en la colección: simula cuentas creadas por migraciones
+    // antiguas, sin el campo emailVerificado.
+    await UserModel.collection.insertOne({
+      email: "legacy@correo.com",
+      passwordHash: bcrypt.hashSync("Clave123", 12),
+      nombre: "Legacy",
+      rol: "cliente",
+      activo: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const login = await request(app).post("/api/v1/auth/login").send({
+      email: "legacy@correo.com",
+      password: "Clave123",
+    });
+    expect(login.status).toBe(200);
+    expect(login.body.user.emailVerificado).toBe(true);
+
+    const cookies = login.headers["set-cookie"] as unknown as string[];
+    const resumen = await request(app)
+      .get("/api/v1/cliente/resumen")
+      .set("Cookie", cookies);
+    expect(resumen.status).toBe(200);
+  });
 });

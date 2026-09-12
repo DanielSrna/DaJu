@@ -109,7 +109,8 @@ export function Login() {
         </Link>
       </p>
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        ¿No tienes cuenta? Compra un paquete y la creamos automáticamente
+        ¿No tienes cuenta? Cotiza un producto y la creamos al registrarte —
+        la fase de planeación y diseño es gratis.
       </p>
       <div className="mt-2 text-center">
         <Link to="/productos" className="text-sm font-semibold text-[var(--brand-primario)] underline underline-offset-4 hover:text-[var(--brand-acento)]">
