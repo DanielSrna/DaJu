@@ -103,12 +103,24 @@ describe("Cotización desde la vitrina", () => {
       screen.getByLabelText("Escribe de nuevo tu contraseña"),
       "Clave123",
     );
+    // Confirmación en vivo de email y contraseña.
+    expect(screen.getByText("Los emails coinciden ✓")).toBeInTheDocument();
+    expect(
+      screen.getByText("Las contraseñas coinciden ✓"),
+    ).toBeInTheDocument();
+    // Sin aceptar los contratos el registro está deshabilitado.
+    expect(
+      screen.getByRole("button", { name: /Cotizar y crear mi cuenta/i }),
+    ).toBeDisabled();
     await usuario.click(
       screen.getByLabelText(/contrato de condiciones del servicio/i),
     );
     await usuario.click(
       screen.getByLabelText(/contrato de manejo de datos personales/i),
     );
+    expect(
+      screen.getByRole("button", { name: /Cotizar y crear mi cuenta/i }),
+    ).toBeEnabled();
     await usuario.click(
       screen.getByRole("button", { name: /Cotizar y crear mi cuenta/i }),
     );

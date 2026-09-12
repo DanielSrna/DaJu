@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NavEntorno } from "@/components/portal/nav-entorno";
 import { ResumenProyecto } from "@/components/portal/resumen-proyecto";
+import { SeccionDocumentacion } from "@/components/portal/seccion-documentacion";
 import { api } from "@/lib/api/cliente";
 import { useModoEdicion } from "@/lib/modo-edicion";
 import type { EspacioPortal } from "@/lib/api/tipos";
@@ -97,6 +98,11 @@ export function EntornoServicio() {
 
       {/* Resumen del proyecto: composición, costos, impacto y pruebas */}
       {id && <ResumenProyecto familia="espacio" id={id} esAdmin={esAdmin} />}
+
+      {/* Documentación: manuales PDF */}
+      {id && (
+        <SeccionDocumentacion familia="espacio" id={id} esAdmin={esAdmin} />
+      )}
 
       {esAdmin && id && (
         <section className="mt-8 rounded-2xl border border-dashed p-5">

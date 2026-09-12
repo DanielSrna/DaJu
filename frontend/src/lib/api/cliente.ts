@@ -31,6 +31,7 @@ import type {
   ElegirMetodoResultado,
   InformeResumen,
   PruebaInforme,
+  DocumentoEntorno,
   ApiError,
 } from "./tipos";
 
@@ -123,6 +124,24 @@ function informeApi(base: "proyectos" | "espacios") {
     obtener: (id: string) =>
       peticion<{ informe: InformeResumen }>(`/${base}/${id}/informe`),
     urlPdf: (id: string) => apiUrl(`/${base}/${id}/informe/pdf`),
+    /**
+     * Descarga el PDF con la sesión (fetch + blob): funciona también cuando
+     * el frontend y la API están en dominios distintos.
+     */
+    descargarPdf: async (
+      id: string,
+    ): Promise<{ blob: Blob; nombre: string }> => {
+      const res = await fetch(apiUrl(`/${base}/${id}/informe/pdf`), {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("No pudimos generar el informe en PDF.");
+      }
+      const blob = await res.blob();
+      const disposicion = res.headers.get("content-disposition") ?? "";
+      const coincidencia = /filename="?([^";]+)"?/.exec(disposicion);
+      return { blob, nombre: coincidencia?.[1] ?? "informe.pdf" };
+    },
     agregarPrueba: (
       id: string,
       datos: {
@@ -164,6 +183,31 @@ function informeApi(base: "proyectos" | "espacios") {
         `/${base}/${id}/informe/impacto`,
         { method: "PUT", body: JSON.stringify(datos) },
       ),
+  };
+}
+
+/** Rutas de documentación (manuales PDF) por proyecto o espacio. */
+function documentosApi(base: "proyectos" | "espacios") {
+  return {
+    listar: (id: string) =>
+      peticion<{ documentos: DocumentoEntorno[] }>(`/${base}/${id}/documentos`),
+    subir: (
+      id: string,
+      datos: { titulo: string; descripcion?: string; archivo: File },
+    ) => {
+      const form = new FormData();
+      form.append("archivo", datos.archivo);
+      form.append("titulo", datos.titulo);
+      if (datos.descripcion) form.append("descripcion", datos.descripcion);
+      return peticion<{ documento: DocumentoEntorno }>(
+        `/${base}/${id}/documentos`,
+        { method: "POST", body: form },
+      );
+    },
+    eliminar: (id: string, documentoId: string) =>
+      peticion<unknown>(`/${base}/${id}/documentos/${documentoId}`, {
+        method: "DELETE",
+      }),
   };
 }
 
@@ -781,4 +825,7 @@ export const api = {
 
   informeProyecto: informeApi("proyectos"),
   informeEspacio: informeApi("espacios"),
+
+  documentosProyecto: documentosApi("proyectos"),
+  documentosEspacio: documentosApi("espacios"),
 };

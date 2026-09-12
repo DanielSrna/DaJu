@@ -15,6 +15,7 @@ import { SiPaypal, SiTether, SiWise, SiZelle } from "react-icons/si";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/cliente";
+import { useModoEdicion } from "@/lib/modo-edicion";
 import type { MetodoPago, PagoItem } from "@/lib/api/tipos";
 
 const ESTADOS_ABIERTOS: PagoItem["estado"][] = [
@@ -40,6 +41,7 @@ function IconoMetodo({ metodo }: { metodo: MetodoPago }) {
 /** Página de pago: elegir método, ver instrucciones y subir comprobante. */
 export function Pagar() {
   const { pagoId } = useParams<{ pagoId: string }>();
+  const { usuario } = useModoEdicion();
   const [pago, setPago] = useState<PagoItem | null>(null);
   const [metodos, setMetodos] = useState<MetodoPago[]>([]);
   const [metodoElegido, setMetodoElegido] = useState<MetodoPago | null>(null);
@@ -263,7 +265,20 @@ export function Pagar() {
           </div>
           {metodos.length === 0 && (
             <p className="mt-2 text-sm text-muted-foreground">
-              Aún no hay métodos disponibles. Escríbenos por el chat.
+              {usuario?.rol === "admin" ? (
+                <>
+                  Aún no hay métodos de pago configurados. Agrégalos en{" "}
+                  <a
+                    href="/admin/metodos-pago"
+                    className="font-semibold text-[var(--brand-primario)] underline"
+                  >
+                    Admin → Métodos de pago
+                  </a>
+                  .
+                </>
+              ) : (
+                "Aún no hay métodos disponibles. Escríbenos por el chat."
+              )}
             </p>
           )}
 

@@ -7,6 +7,7 @@ import { NavEntorno } from "@/components/portal/nav-entorno";
 import { BarraEtapas } from "@/components/portal/barra-etapas";
 import { EditorEtapas } from "@/components/portal/editor-etapas";
 import { ResumenProyecto } from "@/components/portal/resumen-proyecto";
+import { SeccionDocumentacion } from "@/components/portal/seccion-documentacion";
 import { Semaforo } from "@/components/portal/semaforo";
 import { ArchivosVista } from "@/components/portal/archivos-vista";
 import { api } from "@/lib/api/cliente";
@@ -154,6 +155,11 @@ export function EntornoPaquete() {
       {/* Resumen del proyecto: composición, costos, impacto y pruebas */}
       {id && (
         <ResumenProyecto familia="proyecto" id={id} esAdmin={esAdmin} />
+      )}
+
+      {/* Documentación: manuales PDF del proyecto */}
+      {id && (
+        <SeccionDocumentacion familia="proyecto" id={id} esAdmin={esAdmin} />
       )}
 
       {/* Garantía de soporte */}

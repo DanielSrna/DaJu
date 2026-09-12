@@ -14,6 +14,7 @@ const INFORME = {
   },
   vistas: 2,
   funciones: 1,
+  precioBase: 180,
   costoTotal: 600,
   montoPagado: 400,
   impacto: { porcentaje: 35, descripcion: "Menos tareas manuales" },
@@ -63,7 +64,7 @@ describe("Resumen del proyecto", () => {
     expect(await screen.findByText("Resumen del proyecto")).toBeInTheDocument();
     expect(screen.getByText("2 vistas · 1 funciones")).toBeInTheDocument();
     expect(
-      screen.getByText("$600 USD · pagado $400"),
+      screen.getByText("Producto $180 · plan $600 · pagado $400 USD"),
     ).toBeInTheDocument();
     expect(screen.getByText("35%")).toBeInTheDocument();
     expect(screen.getByText("3 pruebas · 90%")).toBeInTheDocument();
@@ -73,8 +74,8 @@ describe("Resumen del proyecto", () => {
     expect(screen.queryByText("Prueba de carga")).not.toBeInTheDocument();
 
     expect(
-      screen.getByRole("link", { name: /Descargar informe \(PDF\)/i }),
-    ).toHaveAttribute("href", "/api/v1/proyectos/p1/informe/pdf");
+      screen.getByRole("button", { name: /Descargar informe \(PDF\)/i }),
+    ).toBeInTheDocument();
   });
 
   it("el admin agrega una prueba de seguridad con calificación", async () => {

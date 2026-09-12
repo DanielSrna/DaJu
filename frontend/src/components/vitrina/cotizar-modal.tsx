@@ -107,6 +107,27 @@ export function CotizarModal({
     return Object.keys(nuevos).length === 0;
   }
 
+  // Validación en vivo: confirma coincidencias y habilita el registro.
+  const emailValido = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim());
+  const emailsCoinciden =
+    form.confirmarEmail.trim() !== "" &&
+    form.confirmarEmail.trim().toLowerCase() ===
+      form.email.trim().toLowerCase();
+  const passwordValida =
+    form.password.length >= 8 && /^(?=.*[a-zA-Z])(?=.*\d)/.test(form.password);
+  const passwordsCoinciden =
+    form.confirmarPassword !== "" && form.confirmarPassword === form.password;
+  const formularioListo =
+    form.nombre.trim().length >= 2 &&
+    form.primerApellido.trim().length >= 2 &&
+    esMayorDeEdad(form.fechaNacimiento) &&
+    emailValido &&
+    emailsCoinciden &&
+    passwordValida &&
+    passwordsCoinciden &&
+    aceptaCondiciones &&
+    aceptaDatos;
+
   async function cotizar(): Promise<void> {
     if (!validar()) return;
     setEnviando(true);
@@ -368,10 +389,22 @@ export function CotizarModal({
                     onChange={(e) => campo("confirmarEmail", e.target.value)}
                     placeholder="Repite tu correo"
                   />
-                  {errores.confirmarEmail && (
-                    <span className="text-xs text-destructive">
-                      {errores.confirmarEmail}
+                  {form.confirmarEmail ? (
+                    <span
+                      className={`text-xs ${
+                        emailsCoinciden ? "text-green-600" : "text-destructive"
+                      }`}
+                    >
+                      {emailsCoinciden
+                        ? "Los emails coinciden ✓"
+                        : "Los emails no coinciden"}
                     </span>
+                  ) : (
+                    errores.confirmarEmail && (
+                      <span className="text-xs text-destructive">
+                        {errores.confirmarEmail}
+                      </span>
+                    )
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
@@ -400,10 +433,24 @@ export function CotizarModal({
                     onChange={(e) => campo("confirmarPassword", e.target.value)}
                     placeholder="Repite tu contraseña"
                   />
-                  {errores.confirmarPassword && (
-                    <span className="text-xs text-destructive">
-                      {errores.confirmarPassword}
+                  {form.confirmarPassword ? (
+                    <span
+                      className={`text-xs ${
+                        passwordsCoinciden
+                          ? "text-green-600"
+                          : "text-destructive"
+                      }`}
+                    >
+                      {passwordsCoinciden
+                        ? "Las contraseñas coinciden ✓"
+                        : "Las contraseñas no coinciden"}
                     </span>
+                  ) : (
+                    errores.confirmarPassword && (
+                      <span className="text-xs text-destructive">
+                        {errores.confirmarPassword}
+                      </span>
+                    )
                   )}
                 </div>
               </div>
@@ -474,12 +521,18 @@ export function CotizarModal({
               variant="accent"
               size="lg"
               className="w-full"
-              disabled={enviando}
+              disabled={enviando || !formularioListo}
               onClick={() => void cotizar()}
             >
               {enviando ? <Loader2 className="animate-spin" /> : null}
               {enviando ? "Creando tu entorno..." : "Cotizar y crear mi cuenta"}
             </Button>
+            {!formularioListo && (
+              <p className="text-center text-[11px] text-muted-foreground">
+                Completa tus datos, confirma correo y contraseña, y acepta los
+                dos contratos para habilitar el registro.
+              </p>
+            )}
             <p className="text-center text-[11px] text-muted-foreground">
               Sin pago ahora. Te asesoramos <Gratis /> y luego decides.
             </p>

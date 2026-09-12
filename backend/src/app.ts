@@ -22,6 +22,8 @@ export function createApp(): Express {
     cors({
       origin: env.CORS_ORIGINS.split(",").map((o) => o.trim()),
       credentials: true,
+      // Permite leer el nombre del archivo al descargar PDFs cross-site.
+      exposedHeaders: ["Content-Disposition"],
     }),
   );
   app.use(express.json({ limit: "1mb" }));

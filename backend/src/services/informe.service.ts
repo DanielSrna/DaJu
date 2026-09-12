@@ -33,6 +33,8 @@ interface InformeResumenJson {
   };
   vistas: number;
   funciones: number;
+  /** Precio de catálogo del producto que eligió el cliente. */
+  precioBase: number;
   costoTotal: number;
   montoPagado: number;
   impacto: { porcentaje: number | null; descripcion: string };
@@ -51,6 +53,7 @@ interface EntornoInfo {
   estado: string;
   moneda: string;
   clienteId: string;
+  precioBase: number;
   costoTotal: number;
   montoPagado: number;
   etapas: Array<{ monto: number; requierePago: boolean; pagoEstado: string }>;
@@ -282,6 +285,7 @@ export class InformeService {
         estado: proyecto.estado,
         moneda: proyecto.moneda ?? "USD",
         clienteId: String(proyecto.clienteId),
+        precioBase: proyecto.precioBase ?? 0,
         ...sumarEtapas(etapas),
         etapas,
       };
@@ -295,6 +299,7 @@ export class InformeService {
       estado: espacio.estado,
       moneda: espacio.moneda ?? "USD",
       clienteId: String(espacio.clienteId),
+      precioBase: espacio.precioBase ?? 0,
       ...sumarEtapas(etapas),
       etapas,
     };
@@ -334,6 +339,7 @@ export class InformeService {
       },
       vistas,
       funciones,
+      precioBase: entorno.precioBase,
       costoTotal: entorno.costoTotal,
       montoPagado: entorno.montoPagado,
       impacto: {
@@ -385,7 +391,10 @@ export class InformeService {
     doc.fillColor("#334155").fontSize(11).text(`Vistas: ${datos.vistas}`);
     doc.text(`Funciones: ${datos.funciones}`);
     doc.text(
-      `Costo total: $${datos.costoTotal.toLocaleString("es-CO")} ${datos.entorno.moneda}`,
+      `Precio del producto elegido: $${datos.precioBase.toLocaleString("es-CO")} ${datos.entorno.moneda}`,
+    );
+    doc.text(
+      `Costo total del plan: $${datos.costoTotal.toLocaleString("es-CO")} ${datos.entorno.moneda}`,
     );
     doc.text(
       `Pagado: $${datos.montoPagado.toLocaleString("es-CO")} ${datos.entorno.moneda}`,

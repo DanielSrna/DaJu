@@ -110,23 +110,29 @@ export function EditorEtapas({
         </p>
         <p>
           <span className="block text-muted-foreground">Diferencia</span>
-          <strong
-            className={`text-sm ${
-              diferencia === 0
-                ? "text-green-700"
-                : diferencia > 0
-                  ? "text-amber-700"
-                  : "text-destructive"
-            }`}
-          >
-            {diferencia < 0 ? "-" : ""}$
-            {Math.abs(diferencia).toLocaleString("es-CO")} {moneda}
-            {diferencia > 0
-              ? " (por asignar)"
-              : diferencia < 0
-                ? " (excedido)"
-                : " (cuadra)"}
-          </strong>
+          {precioBase > 0 ? (
+            <strong
+              className={`text-sm ${
+                diferencia === 0
+                  ? "text-green-700"
+                  : diferencia > 0
+                    ? "text-amber-700"
+                    : "text-destructive"
+              }`}
+            >
+              {diferencia < 0 ? "-" : ""}$
+              {Math.abs(diferencia).toLocaleString("es-CO")} {moneda}
+              {diferencia > 0
+                ? " (por asignar)"
+                : diferencia < 0
+                  ? " (excedido)"
+                  : " (cuadra)"}
+            </strong>
+          ) : (
+            <strong className="text-sm text-muted-foreground">
+              Sin precio de referencia
+            </strong>
+          )}
         </p>
       </div>
 

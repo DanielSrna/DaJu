@@ -6,6 +6,7 @@ import { NavEntorno } from "@/components/portal/nav-entorno";
 import { BarraEtapas } from "@/components/portal/barra-etapas";
 import { EditorEtapas } from "@/components/portal/editor-etapas";
 import { ResumenProyecto } from "@/components/portal/resumen-proyecto";
+import { SeccionDocumentacion } from "@/components/portal/seccion-documentacion";
 import { Semaforo } from "@/components/portal/semaforo";
 import { api } from "@/lib/api/cliente";
 import { useModoEdicion } from "@/lib/modo-edicion";
@@ -82,6 +83,11 @@ export function EntornoPlantilla() {
 
       {/* Resumen del proyecto: composición, costos, impacto y pruebas */}
       {id && <ResumenProyecto familia="espacio" id={id} esAdmin={esAdmin} />}
+
+      {/* Documentación: manuales PDF */}
+      {id && (
+        <SeccionDocumentacion familia="espacio" id={id} esAdmin={esAdmin} />
+      )}
 
       {/* Vista list preview to pages */}
       <h2 className="mt-8 text-lg font-bold">Vistas</h2>

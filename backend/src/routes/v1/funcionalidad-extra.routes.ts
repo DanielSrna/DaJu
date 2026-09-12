@@ -102,7 +102,7 @@ router.post(
  *     security:
  *       - cookieAuth: []
  *     parameters:
- *       - in: path, name: id, required: true, schema: { type: string }
+ *       - { in: path, name: id, required: true, schema: { type: string } }
  *     requestBody:
  *       required: true
  *       content:
@@ -149,7 +149,7 @@ router.put(
  *     security:
  *       - cookieAuth: []
  *     parameters:
- *       - in: path, name: id, required: true, schema: { type: string }
+ *       - { in: path, name: id, required: true, schema: { type: string } }
  *     responses:
  *       204:
  *         description: Eliminada

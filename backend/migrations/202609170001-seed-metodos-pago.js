@@ -11,7 +11,7 @@ const metodos = [
     clave: 'bre-b',
     tipo: 'manual',
     moneda: 'COP',
-    titular: 'DaJu Platform',
+    titular: 'DaJu Plataform',
     datos: 'Llave Bre-B: 300 000 0000',
     instrucciones:
       'Transfiere por Bre-B a la llave indicada. Escribe el código {codigo} en el mensaje de la transacción y sube el comprobante.',
@@ -24,7 +24,7 @@ const metodos = [
     clave: 'nequi',
     tipo: 'manual',
     moneda: 'COP',
-    titular: 'DaJu Platform',
+    titular: 'DaJu Plataform',
     datos: 'Celular Nequi: 300 000 0000',
     instrucciones:
       'Envía el pago por Nequi al celular indicado. Escribe el código {codigo} en el mensaje y sube el comprobante.',
@@ -37,7 +37,7 @@ const metodos = [
     clave: 'daviplata',
     tipo: 'manual',
     moneda: 'COP',
-    titular: 'DaJu Platform',
+    titular: 'DaJu Plataform',
     datos: 'Celular DaviPlata: 300 000 0000',
     instrucciones:
       'Envía el pago por DaviPlata al celular indicado. Escribe el código {codigo} en el mensaje y sube el comprobante.',
@@ -50,7 +50,7 @@ const metodos = [
     clave: 'nu',
     tipo: 'manual',
     moneda: 'COP',
-    titular: 'DaJu Platform',
+    titular: 'DaJu Plataform',
     datos: 'Cuenta Nu: 0000 0000 0000 0000',
     instrucciones:
       'Transfiere a la cuenta Nu indicada. Escribe el código {codigo} en el mensaje y sube el comprobante.',
@@ -63,7 +63,7 @@ const metodos = [
     clave: 'transferencia-bancaria',
     tipo: 'manual',
     moneda: 'COP',
-    titular: 'DaJu Platform',
+    titular: 'DaJu Plataform',
     datos: 'Cuenta de ahorros Bancolombia: 000 000000 00',
     instrucciones:
       'Transfiere a la cuenta de ahorros indicada. Escribe el código {codigo} en el mensaje y sube el comprobante.',
@@ -76,7 +76,7 @@ const metodos = [
     clave: 'paypal',
     tipo: 'paypal',
     moneda: 'USD',
-    titular: 'DaJu Platform',
+    titular: 'DaJu Plataform',
     datos: 'Pago en línea con saldo o tarjeta',
     instrucciones:
       'Paga en línea con tu cuenta PayPal. El pago se confirma automáticamente.',

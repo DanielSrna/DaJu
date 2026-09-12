@@ -5,6 +5,7 @@ import {
   FileCheck2,
   Gauge,
   Layers,
+  Loader2,
   ShieldCheck,
   Target,
   Wallet,
@@ -28,6 +29,8 @@ export function ResumenProyecto({ familia, id, esAdmin }: Props) {
   const cliente =
     familia === "proyecto" ? api.informeProyecto : api.informeEspacio;
   const [informe, setInforme] = useState<InformeResumen | null>(null);
+  const [descargando, setDescargando] = useState(false);
+  const [errorPdf, setErrorPdf] = useState<string | null>(null);
 
   const cargar = (): void => {
     cliente
@@ -40,6 +43,27 @@ export function ResumenProyecto({ familia, id, esAdmin }: Props) {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  /** Descarga con la sesión y guarda el archivo (funciona cross-site). */
+  const descargar = async (): Promise<void> => {
+    setDescargando(true);
+    setErrorPdf(null);
+    try {
+      const { blob, nombre } = await cliente.descargarPdf(id);
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = nombre;
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setErrorPdf((e as Error).message);
+    } finally {
+      setDescargando(false);
+    }
+  };
 
   if (!informe) return null;
 
@@ -56,9 +80,9 @@ export function ResumenProyecto({ familia, id, esAdmin }: Props) {
     {
       icono: Wallet,
       titulo: "Costos",
-      valor: `$${fmt(informe.costoTotal)} ${informe.entorno.moneda} · pagado $${fmt(
-        informe.montoPagado,
-      )}`,
+      valor: `Producto $${fmt(informe.precioBase)} · plan $${fmt(
+        informe.costoTotal,
+      )} · pagado $${fmt(informe.montoPagado)} ${informe.entorno.moneda}`,
     },
     {
       icono: Target,
@@ -94,12 +118,17 @@ export function ResumenProyecto({ familia, id, esAdmin }: Props) {
           <BarChart3 className="size-5 text-[var(--brand-acento)]" />
           Resumen del proyecto
         </h2>
-        <Button asChild variant="outline" size="sm">
-          <a href={cliente.urlPdf(id)} target="_blank" rel="noreferrer">
-            <Download /> Descargar informe (PDF)
-          </a>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={descargando}
+          onClick={() => void descargar()}
+        >
+          {descargando ? <Loader2 className="animate-spin" /> : <Download />}
+          {descargando ? "Generando…" : "Descargar informe (PDF)"}
         </Button>
       </div>
+      {errorPdf && <p className="mt-2 text-xs text-destructive">{errorPdf}</p>}
       <p className="mt-1 text-sm text-muted-foreground">
         Lo que compone tu proyecto y las pruebas que le hicimos. El detalle
         completo de cada prueba va en el PDF.

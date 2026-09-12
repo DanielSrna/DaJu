@@ -469,6 +469,8 @@ export interface InformeResumen {
   };
   vistas: number;
   funciones: number;
+  /** Precio de catálogo del producto que eligió el cliente. */
+  precioBase: number;
   costoTotal: number;
   montoPagado: number;
   impacto: { porcentaje: number | null; descripcion: string };
@@ -477,6 +479,15 @@ export interface InformeResumen {
   tests: { total: number; aprobados: number };
   /** Solo llega para el admin (el cliente lo ve en el PDF). */
   pruebas?: PruebaInforme[];
+}
+
+/** Manual PDF de la documentación del entorno. */
+export interface DocumentoEntorno {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  archivo: { url: string; nombre: string; tamañoBytes: number };
+  createdAt: string;
 }
 
 export interface GarantiaInfo {

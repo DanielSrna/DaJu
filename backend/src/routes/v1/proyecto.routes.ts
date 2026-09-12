@@ -9,6 +9,7 @@ import {
 import { validate } from "../../middlewares/validate.middleware";
 import { montarRutasEtapas } from "./etapa.routes";
 import { montarRutasInforme } from "./informe.routes";
+import { montarRutasDocumentos } from "./documento.routes";
 
 const router = Router();
 
@@ -337,5 +338,8 @@ montarRutasEtapas(router, "proyectos", "proyecto");
 
 // Informe técnico (resumen para el cliente + detalle admin + PDF).
 montarRutasInforme(router, "proyectos", "proyecto");
+
+// Documentación: manuales PDF subidos por el admin.
+montarRutasDocumentos(router, "proyectos", "proyecto");
 
 export default router;

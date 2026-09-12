@@ -10,6 +10,7 @@ import { validate } from "../../middlewares/validate.middleware";
 import { uploadArchivoMiddleware } from "../../middlewares/upload.middleware";
 import { montarRutasEtapas } from "./etapa.routes";
 import { montarRutasInforme } from "./informe.routes";
+import { montarRutasDocumentos } from "./documento.routes";
 
 const router = Router();
 
@@ -496,5 +497,8 @@ montarRutasEtapas(router, "espacios", "espacio");
 
 // Informe técnico del espacio (resumen + detalle admin + PDF).
 montarRutasInforme(router, "espacios", "espacio");
+
+// Documentación: manuales PDF subidos por el admin.
+montarRutasDocumentos(router, "espacios", "espacio");
 
 export default router;
