@@ -4,6 +4,7 @@ import { ArrowLeft, CalendarClock, Clock, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NavEntorno } from "@/components/portal/nav-entorno";
+import { ResumenProyecto } from "@/components/portal/resumen-proyecto";
 import { api } from "@/lib/api/cliente";
 import { useModoEdicion } from "@/lib/modo-edicion";
 import type { EspacioPortal } from "@/lib/api/tipos";
@@ -93,6 +94,9 @@ export function EntornoServicio() {
           <p className="mt-1 text-sm text-muted-foreground">Contexto de tu consulta o material de referencia.</p>
         </Link>
       </div>
+
+      {/* Resumen del proyecto: composición, costos, impacto y pruebas */}
+      {id && <ResumenProyecto familia="espacio" id={id} esAdmin={esAdmin} />}
 
       {esAdmin && id && (
         <section className="mt-8 rounded-2xl border border-dashed p-5">

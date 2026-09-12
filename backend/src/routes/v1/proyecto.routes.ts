@@ -8,6 +8,7 @@ import {
 } from "../../middlewares/auth.middleware";
 import { validate } from "../../middlewares/validate.middleware";
 import { montarRutasEtapas } from "./etapa.routes";
+import { montarRutasInforme } from "./informe.routes";
 
 const router = Router();
 
@@ -333,5 +334,8 @@ router.put(
 
 // Plan de etapas del proyecto (barra de progreso personalizable).
 montarRutasEtapas(router, "proyectos", "proyecto");
+
+// Informe técnico (resumen para el cliente + detalle admin + PDF).
+montarRutasInforme(router, "proyectos", "proyecto");
 
 export default router;

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Blocks, Plus } from "lucide-react";
+import { ArrowLeft, Blocks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavEntorno } from "@/components/portal/nav-entorno";
 import { BarraEtapas } from "@/components/portal/barra-etapas";
 import { EditorEtapas } from "@/components/portal/editor-etapas";
+import { ResumenProyecto } from "@/components/portal/resumen-proyecto";
 import { Semaforo } from "@/components/portal/semaforo";
 import { api } from "@/lib/api/cliente";
 import { useModoEdicion } from "@/lib/modo-edicion";
@@ -15,8 +16,6 @@ export function EntornoPlantilla() {
   const { id } = useParams<{ id: string }>();
   const [vistas, setVistas] = useState<VistaDisenoPortal[] | null>(null);
   const [espacio, setEspacio] = useState<EspacioPortal | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [nuevaVista, setNuevaVista] = useState("");
   const { usuario } = useModoEdicion();
   const esAdmin = usuario?.rol === "admin";
 
@@ -30,17 +29,6 @@ export function EntornoPlantilla() {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
-  const crearVista = async (): Promise<void> => {
-    if (!id || !nuevaVista.trim()) return;
-    try {
-      await api.crearVista(id, nuevaVista.trim());
-      setNuevaVista("");
-      cargar();
-    } catch {
-      setError("No se pudo crear la vista.");
-    }
-  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12">
@@ -92,19 +80,8 @@ export function EntornoPlantilla() {
         </section>
       )}
 
-      <div className="mt-6 flex gap-2">
-        <input
-          aria-label="Nombre de la vista"
-          placeholder="Agregar nueva vista / función…"
-          value={nuevaVista}
-          onChange={(e) => setNuevaVista(e.target.value)}
-          className="w-full max-w-sm rounded-md border px-3 py-2 text-sm"
-        />
-        <Button variant="accent" size="sm" onClick={() => void crearVista()}>
-          <Plus className="size-4" /> Agregar nueva vista / función
-        </Button>
-      </div>
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {/* Resumen del proyecto: composición, costos, impacto y pruebas */}
+      {id && <ResumenProyecto familia="espacio" id={id} esAdmin={esAdmin} />}
 
       {/* Vista list preview to pages */}
       <h2 className="mt-8 text-lg font-bold">Vistas</h2>
@@ -112,7 +89,7 @@ export function EntornoPlantilla() {
         {!vistas
           ? <p className="text-sm text-muted-foreground">Cargando vistas…</p>
           : vistas.length === 0
-            ? <p className="text-sm text-muted-foreground">Aún no hay vistas. Crea la primera arriba.</p>
+            ? <p className="text-sm text-muted-foreground">Aún no hay vistas. Agrégalas desde la pestaña Vistas.</p>
             : vistas.map((v) => (
                 <Link
                   key={v.id}

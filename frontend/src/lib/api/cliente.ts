@@ -29,6 +29,8 @@ import type {
   MetodoPago,
   MetodoPagoInput,
   ElegirMetodoResultado,
+  InformeResumen,
+  PruebaInforme,
   ApiError,
 } from "./tipos";
 
@@ -111,6 +113,56 @@ function etapasApi(base: "proyectos" | "espacios") {
       peticion<{ pago: PagoItem }>(
         `/${base}/${id}/etapas/${etapaId}/solicitar-pago`,
         { method: "POST" },
+      ),
+  };
+}
+
+/** Rutas del informe técnico compartidas por proyecto y espacio. */
+function informeApi(base: "proyectos" | "espacios") {
+  return {
+    obtener: (id: string) =>
+      peticion<{ informe: InformeResumen }>(`/${base}/${id}/informe`),
+    urlPdf: (id: string) => apiUrl(`/${base}/${id}/informe/pdf`),
+    agregarPrueba: (
+      id: string,
+      datos: {
+        tipo: "rendimiento" | "seguridad" | "test";
+        titulo: string;
+        descripcion?: string;
+        calificacion?: number;
+        exitoso?: boolean;
+      },
+    ) =>
+      peticion<{ pruebas: PruebaInforme[] }>(`/${base}/${id}/informe/pruebas`, {
+        method: "POST",
+        body: JSON.stringify(datos),
+      }),
+    actualizarPrueba: (
+      id: string,
+      pruebaId: string,
+      datos: {
+        titulo?: string;
+        descripcion?: string;
+        calificacion?: number | null;
+        exitoso?: boolean;
+      },
+    ) =>
+      peticion<{ pruebas: PruebaInforme[] }>(
+        `/${base}/${id}/informe/pruebas/${pruebaId}`,
+        { method: "PUT", body: JSON.stringify(datos) },
+      ),
+    eliminarPrueba: (id: string, pruebaId: string) =>
+      peticion<{ pruebas: PruebaInforme[] }>(
+        `/${base}/${id}/informe/pruebas/${pruebaId}`,
+        { method: "DELETE" },
+      ),
+    actualizarImpacto: (
+      id: string,
+      datos: { porcentaje: number | null; descripcion?: string },
+    ) =>
+      peticion<{ impacto: { porcentaje: number | null; descripcion: string } }>(
+        `/${base}/${id}/informe/impacto`,
+        { method: "PUT", body: JSON.stringify(datos) },
       ),
   };
 }
@@ -726,4 +778,7 @@ export const api = {
 
   etapasProyecto: etapasApi("proyectos"),
   etapasEspacio: etapasApi("espacios"),
+
+  informeProyecto: informeApi("proyectos"),
+  informeEspacio: informeApi("espacios"),
 };

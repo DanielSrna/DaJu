@@ -446,6 +446,39 @@ export interface ElegirMetodoResultado {
   urlPago: string | null;
 }
 
+/** Prueba del informe técnico (rendimiento, seguridad o test). */
+export interface PruebaInforme {
+  id: string;
+  tipo: "rendimiento" | "seguridad" | "test";
+  titulo: string;
+  descripcion: string;
+  calificacion: number | null;
+  exitoso: boolean | null;
+  createdAt: string;
+}
+
+/** Resumen del informe técnico que ve el cliente (detalle solo en el PDF). */
+export interface InformeResumen {
+  entorno: {
+    tipo: "proyecto" | "espacio";
+    id: string;
+    nombre: string;
+    estado: string;
+    moneda: string;
+    cliente: string;
+  };
+  vistas: number;
+  funciones: number;
+  costoTotal: number;
+  montoPagado: number;
+  impacto: { porcentaje: number | null; descripcion: string };
+  rendimiento: { total: number; promedio: number | null };
+  seguridad: { total: number; promedio: number | null };
+  tests: { total: number; aprobados: number };
+  /** Solo llega para el admin (el cliente lo ve en el PDF). */
+  pruebas?: PruebaInforme[];
+}
+
 export interface GarantiaInfo {
   activa: boolean;
   soporteMeses: number;

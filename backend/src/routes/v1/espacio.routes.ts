@@ -9,6 +9,7 @@ import {
 import { validate } from "../../middlewares/validate.middleware";
 import { uploadArchivoMiddleware } from "../../middlewares/upload.middleware";
 import { montarRutasEtapas } from "./etapa.routes";
+import { montarRutasInforme } from "./informe.routes";
 
 const router = Router();
 
@@ -492,5 +493,8 @@ router.post(
 
 // Plan de etapas del espacio (plantilla o consultoría).
 montarRutasEtapas(router, "espacios", "espacio");
+
+// Informe técnico del espacio (resumen + detalle admin + PDF).
+montarRutasInforme(router, "espacios", "espacio");
 
 export default router;

@@ -18,7 +18,8 @@
     "migrate:down": "migrate-mongo down",
     "migrate:create": "migrate-mongo create",
     "migrate:status": "migrate-mongo status"
-  },  "dependencies": {
+  },
+  "dependencies": {
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
@@ -33,6 +34,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.3.0",
     "nodemailer": "^9.0.6",
+    "pdfkit": "^0.20.2",
     "sharp": "^0.35.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
@@ -52,6 +54,7 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^22.9.0",
     "@types/nodemailer": "^8.0.1",
+    "@types/pdfkit": "^0.17.6",
     "@types/supertest": "^6.0.2",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",
